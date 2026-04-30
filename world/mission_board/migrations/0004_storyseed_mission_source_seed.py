@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("factions", "0002_faction_channel_id_faction_faction_head_and_more"),
         ("mission_board", "0003_alter_mission_failure_penalty_scope_and_more"),
-        ("objects", "0014_defaultobject_defaultcharacter_defaultexit_and_more"),
+        ("objects", "0013_defaultobject_alter_objectdb_id_defaultcharacter_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

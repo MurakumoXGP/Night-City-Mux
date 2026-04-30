@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("mission_board", "0001_initial"),
         ("factions", "0001_initial"),
-        ("objects", "0014_defaultobject_defaultcharacter_defaultexit_and_more"),
+        ("objects", "0013_defaultobject_alter_objectdb_id_defaultcharacter_and_more"),
     ]
 
     operations = [

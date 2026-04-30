@@ -111,6 +111,15 @@ class CharacterSheet(SharedMemoryModel):
         default=0,
         help_text="Permanent humanity loss from removed/destroyed cyberware (e.g. plot removal)",
     )
+    humanity_max_override = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text=(
+            "Staff-set humanity maximum override. When set, replaces Empathy x 10 as the "
+            "humanity ceiling. All HL and recovery calculations use this cap instead."
+        ),
+    )
     uninstalled_cyberware_hl = models.JSONField(
         default=dict,
         blank=True,
@@ -536,7 +545,7 @@ class CharacterSheet(SharedMemoryModel):
             and getattr(self, field.name) > 0}
 
     def initialize_humanity(self):
-        self.humanity = self.empathy * 10
+        self.humanity = self.humanity_max_override if self.humanity_max_override is not None else (self.empathy * 10)
         self.total_cyberware_humanity_loss = 0
 
     def calculate_humanity_loss(self, quiet=False):
@@ -558,7 +567,7 @@ class CharacterSheet(SharedMemoryModel):
         if not quiet:
             logger.info(f"Total cyberware humanity loss: {total_cyberware_hl}, trauma: {trauma_hl}, uninstalled: {uninstalled_hl}")
 
-        natural_ceiling = self.empathy * 10
+        natural_ceiling = self.humanity_max_override if self.humanity_max_override is not None else (self.empathy * 10)
         # No HL: full pool is Empathy x 10 (matches CPR when nothing has cost humanity yet).
         if total_hl == 0:
             new_humanity = natural_ceiling

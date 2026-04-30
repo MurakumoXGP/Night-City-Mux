@@ -329,6 +329,32 @@ class CmdIP(MuxCommand):
             self.caller.msg(f"Could not read current value for {stat_name}.")
             return
 
+        if stat_key in IP_ROLE_ABILITIES and current_val == 0:
+            primary_role = (getattr(char.db, "role", "") or "").strip()
+            ROLE_ABILITY_KEYS = {
+                "Rockerboy": "charismatic_impact",
+                "Solo": "combat_awareness",
+                "Netrunner": "interface",
+                "Tech": "maker",
+                "Medtech": "medicine",
+                "Media": "credibility",
+                "Lawman": "teamwork",
+                "Exec": "backup",
+                "Fixer": "operator",
+                "Nomad": "moto",
+            }
+            primary_ability_key = ROLE_ABILITY_KEYS.get(primary_role, "")
+            if primary_ability_key and stat_key != primary_ability_key:
+                primary_rank = get_character_stat_value(char, primary_ability_key)
+                primary_rank = int(primary_rank) if primary_rank is not None else 0
+                if primary_rank < 4:
+                    self.caller.msg(
+                        f"You cannot purchase a secondary role ability until your primary "
+                        f"role ability ({primary_ability_key.replace('_', ' ').title()}) is at least Rank 4. "
+                        f"Currently: Rank {primary_rank}."
+                    )
+                    return
+
         cost, next_level = get_ip_cost(
             purchase_stat,
             current_val,

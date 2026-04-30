@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("inventory", "0003_sof_weapon_attachments"),
+        ("inventory", "0003_weaponattachment_weapon_attachment_slots_and_more"),
     ]
 
     operations = [

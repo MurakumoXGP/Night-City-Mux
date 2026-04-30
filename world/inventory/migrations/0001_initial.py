@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("cyberpunk_sheets", "0001_initial"),
         ("cyberware", "0001_initial"),
-        ("objects", "0014_defaultobject_defaultcharacter_defaultexit_and_more"),
+        ("objects", "0013_defaultobject_alter_objectdb_id_defaultcharacter_and_more"),
     ]
 
     operations = [

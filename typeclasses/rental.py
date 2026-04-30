@@ -232,8 +232,15 @@ class RentableRoom(Room):
             return False, f"Invalid rental type: {rental_type}"
 
         data = self.RENTAL_TYPES[rental_type]
-        if data.get("role_required") and not character.check_permstring(data["role_required"]):
-            return False, f"You need to be {data['role_required']} to rent this type."
+        if data.get("role_required"):
+            required_role = data["role_required"].strip().lower()
+            char_role = ""
+            if hasattr(character, "db") and getattr(character.db, "role", None):
+                char_role = (character.db.role or "").strip().lower()
+            if not char_role and sheet and hasattr(sheet, "role"):
+                char_role = (sheet.role or "").strip().lower()
+            if char_role != required_role:
+                return False, f"This housing type is reserved for {data['role_required']} characters only."
 
         rent_cost = get_effective_rent_cost(self) if self.db.rent_cost is not None else (data.get("rent") or 0)
         if rent_cost > 0:

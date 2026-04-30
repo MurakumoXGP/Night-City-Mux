@@ -658,7 +658,7 @@ class CmdRoom(MuxCommand):
                 "tag, tags, tagsearch, searchtag, coords, chargen"
             )
 
-    def access(self, srcobj, access_type="cmd", default=False):
+    def access(self, srcobj, access_type="cmd", default=False, **kwargs):
         if access_type != "cmd":
             return super().access(srcobj, access_type, default)
         return True

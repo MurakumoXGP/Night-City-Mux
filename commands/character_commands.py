@@ -25,6 +25,21 @@ from world.cyberware.skill_chips import get_effective_skill_value, get_installed
 from world.cyberware.stat_bonuses import get_effective_body
 from math import ceil
 
+
+
+def _humanity_display(character, sheet):
+    """Return humanity as current/max string for sheet display."""
+    try:
+        empathy = getattr(sheet, "empathy", None) or getattr(character.db, "empathy", 1) or 1
+        maximum = int(empathy) * 10
+        current = getattr(sheet, "humanity", None)
+        if current is None:
+            current = getattr(character.db, "humanity", maximum)
+        current = int(current) if current is not None else maximum
+        return f"{current}/{maximum}"
+    except Exception:
+        return str(getattr(character.db, "humanity", 0))
+
 class CmdSheet(MuxCommand):
     """
     Show character sheet or lifepath details
@@ -382,7 +397,7 @@ class CmdSheet(MuxCommand):
         derived_stats = [
             ("Hit Points:", hp_str, "Death Save:", target.db.death_save),
             ("Death Save Penalty:", death_save_penalty, "Dead:", dead_str),
-            ("Serious Wounds:", target.db.serious_wounds, "Humanity:", target.db.humanity),
+            ("Serious Wounds:", target.db.serious_wounds, "Humanity:", _humanity_display(target, sheet)),
             ("Unarmed Damage:", unarmed_die_display, "Unarmed Dice:", unarmed_dice)
         ]
         LABEL_W, VAL_W = 19, 18  # Fit 80-char width; "Death Save Penalty:" = 19

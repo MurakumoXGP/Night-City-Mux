@@ -642,7 +642,7 @@ class CmdHelpSearch(CmdHelp):
     ):
         """Format help entry with pipes escaped so pipes (e.g. add|remove) display correctly."""
         if help_text:
-            help_text = help_text.replace("|", "||")
+            import re; help_text = re.sub(r"\|(?![a-zA-Z0-9/\[>_!-])", "||", help_text)
         return super().format_help_entry(
             topic=topic,
             help_text=help_text,

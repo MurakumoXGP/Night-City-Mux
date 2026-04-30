@@ -249,6 +249,15 @@ FASHIONWARE_TYPE = "fashionware"
 # Self-ICE limit per character (Neural Link/Neuroport)
 SELF_ICE_LIMIT = 3
 
+BORGWARE_OPTIONAL_PARENTS = frozenset({
+    "cybereye",
+    "sponsored cybereye",
+    "cyberarm",
+    "neo-soviet cyberarm",
+    "cyberaudio suite",
+    "discount cyberaudio suite",
+})
+
 # Paired Cyberarm weapons: buy two max; must parent to paired Cyberarms (same model both sides).
 PAIRED_CYBERARM_WEAPON_OPTIONS = frozenset({"gorilla arm", "mantis blade"})
 
@@ -1303,6 +1312,10 @@ def check_has_required_parent(character_sheet, cyberware):
     For a second such option, the character must have the limb and parent it.
     """
     cw_name = _norm(getattr(cyberware, "name", ""))
+
+    # Borgware-optional override: these are foundation pieces, never require a parent to install.
+    if cw_name in BORGWARE_OPTIONAL_PARENTS:
+        return True, ""
 
     # Solo-limb override: allow first install without parent
     if cw_name in SOLO_ARM_OPTIONS:

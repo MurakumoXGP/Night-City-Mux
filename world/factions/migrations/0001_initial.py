@@ -9,10 +9,10 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("objects", "0014_defaultobject_defaultcharacter_defaultexit_and_more"),
+        ("objects", "0013_defaultobject_alter_objectdb_id_defaultcharacter_and_more"),
         (
             "typeclasses",
-            "0018_rename_tag_db_key_db_category_db_tagtype_db_model_typeclasses_db_key_be0c81_idx",
+            "0017_use_index_instead_of_index_together_in_tags",
         ),
     ]
 
