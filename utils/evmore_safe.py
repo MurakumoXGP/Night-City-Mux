@@ -121,7 +121,8 @@ class SafeEvMore(EvMore):
                 pass
 
         # Add pager cmdset on a single anchor only to avoid duplicate matches.
-        self._anchor_target().cmdset.add(CmdSetMore)
+        # Use SafeCmdSetMore which maps next/back instead of n/b (avoids exit conflicts).
+        self._anchor_target().cmdset.add(SafeCmdSetMore)
         self.page_top()
 
     def page_quit(self, quiet=False):
@@ -165,3 +166,4 @@ def msg(
         exit_on_lastpage=exit_on_lastpage,
         **kwargs,
     )
+

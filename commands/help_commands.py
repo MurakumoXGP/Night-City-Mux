@@ -191,8 +191,8 @@ class CmdPagerNext(MuxCommand):
     Works for both the custom help pager and Evennia's native EvMore pager.
     """
 
-    key = "n"
-    aliases = ["next"]
+    key = "next"
+    aliases = []
     locks = "cmd:all()"
     help_category = "World & Information"
     auto_help = False
@@ -271,6 +271,8 @@ class CmdPagerNext(MuxCommand):
             return
 
         self.caller.msg("No active pager.")
+
+
 
 
 class _PagerActionCommand(MuxCommand):
@@ -378,9 +380,6 @@ class PagerNavCmdSet(CmdSet):
     key = "pager_nav_commands"
     priority = 120
     mergetype = "Union"
-    # Keep local room/object commandsets (including ExitCmdSet) available.
-    # Without explicit False, higher-priority cmdset merges can inherit
-    # restrictive flags from other active cmdsets and hide exit aliases.
     no_exits = False
     no_objs = False
 
