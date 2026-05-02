@@ -193,6 +193,22 @@ vehicles = [
         "speed_narrative": "60 MPH / 97 KPH",
         "value": 15000,
     },
+        # Interface RED Vol 4: Stickball
+    {
+        "name": "Stickball Stick",
+        "damage": "1d6",
+        "rof": "2",
+        "hands": 1,
+        "concealable": False,
+        "weight": 2,
+        "value": 100,
+        "category": "melee",
+        "clip": 0,
+        "attachment_slots": 0,
+        "weapon_type": "light melee",
+        "quality": "standard",
+        "description": "Interface RED Vol 4: Stickball. Tech Upgraded One-Handed Light Melee Weapon. Cannot be concealed. Damage dealt cannot cause a Critical Injury. If damage would reduce target to under 1 HP, target is instead Unconscious at 1 HP. During a Stickball game, damage increases by 1d6 per electrified ball carried (max +3d6). Incompatible with Poison, Biotoxin, and similar substances. Cost 100eb (Premium).",
+    },
         # Interface RED Vol 4: 12 Days of Gearmas
     {
         "name": "Zonda Metrocar",
@@ -322,6 +338,8 @@ ammunition = [
     {"name": "Junk Ammunition", "ammo_type": "JUNK", "weapon_type": "Generic", "damage_modifier": 0, "armor_piercing": 0, "description": "Poor quality rounds. -1d6 vs SP 1+, Autofire -1. Arrows, Bullets, Slugs. 50 rounds.", "cost": 10},
     {"name": "Arrowhypo Ammunition", "ammo_type": "ARROWHYPO", "weapon_type": "Archery", "damage_modifier": 0, "armor_piercing": 0, "description": "Reinforced airhypo on arrow. Load 1 dose Street Drug. Hit = inject drug, no damage. Recoverable like Basic Arrow. 1 unit.", "cost": 100},
     {"name": "Airburst Ammunition", "ammo_type": "AIRBURST", "weapon_type": "Heavy Weapons", "damage_modifier": 0, "armor_piercing": 0, "description": "Gas-dispersal munition for Grenades/Rockets. Load 3 doses of single Street Drug. Hit = gas dose. Nasal filters/gas masks prevent. 1 unit.", "cost": 125},
+    # Interface RED Vol 4: Stickball
+    {"name": "Stickball Sanctioned Rubber Ammunition", "ammo_type": "RUBBER", "weapon_type": "Generic", "damage_modifier": 0, "armor_piercing": 0, "description": "Interface RED Vol 4: Stickball. Tech Upgraded Rubber Ammunition. Arrows, Bullets, and Slugs. Cannot cause Critical Injuries. If damage would reduce target to under 1 HP, they are instead Unconscious at 1 HP. 10 rounds per pack. Cost 10eb (Cheap).", "cost": 10, "quantity": 10},
 ]
 
 weapons = [
