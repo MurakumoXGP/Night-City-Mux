@@ -3507,6 +3507,31 @@ gears = [
         "weight": 0.5,
         "value": 500
     },
+    # Interface RED Vol 3: Going Metal -- Gear
+    {
+        "name": "CO2 Grenade",
+        "category": "Explosives",
+        "description": (
+            "Interface RED Vol 3: Going Metal. Grenade Ammunition. Can be loaded into a Grenade Launcher "
+            "or thrown. Does no damage. Extinguishes all instances of fire within the explosion area "
+            "(see CPR p.174). Any weapon capable of firing Smoke Grenades can also fire CO2 Grenades. "
+            "Cost 50eb (Costly)."
+        ),
+        "weight": 1,
+        "value": 50,
+    },
+    {
+        "name": "Linear Frame Omega, External",
+        "category": "Linear Frames",
+        "description": (
+            "Interface RED Vol 3: Going Metal. A perfected powered exoskeleton that grants the user "
+            "ultimate strength. Gear. While plugged in, user increases their BODY to 16 (cannot exceed 17). "
+            "This increase in BODY does not increase HP or change Death Save. "
+            "Requires 3 installations of Interface Plugs to operate. Cost 10,000eb (Super Luxury)."
+        ),
+        "weight": 10,
+        "value": 10000,
+    },
     # Interface RED Vol 3: Spinning Your Wheels
     {
         "name": "Inline Skates",
@@ -3845,6 +3870,131 @@ gears = [
         "weight": 0,
         "value": 100,
     },
+    # Interface RED Vol 3: Midnight with the Upload -- New Hardware
+    {
+        "name": "Aerie",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, each Raven "
+            "Black ICE installed on the Cyberdeck destroys a Defender Program the enemy Netrunner has Rezzed "
+            "at random with their attack effect instead of derezzing it. Takes 2 Hardware Option Slots. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Bushido Accelerator",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. For each Bushido Accelerator "
+            "installed, the Speed (SPD) of all Killer Black ICE installed on the Cyberdeck increases by 2. "
+            "Takes 3 Hardware Option Slots. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Combat Recorder",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, whenever "
+            "another Netrunner fails a Death Save while jacked into the same NET Architecture, the Combat "
+            "Recorder saves the last 5 minutes, auto-scrubbing identifying information. Recordings are "
+            "typically worth 50eb each. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Defense Sequencer",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, a Defense "
+            "Sequencer automatically rezzes an Armor Program at the start of the next Turn whenever an active "
+            "Armor Program is derezzed or destroyed, without using a NET Action. The rezzed Armor must not "
+            "have been used during this Netrun. Takes 2 Hardware Option Slots. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Feline Instinct",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, whenever "
+            "a Sabertooth Black ICE installed on the Cyberdeck destroys a Program, until Jack Out the damage "
+            "dealt by that Sabertooth increases by 1d6. Takes 2 Hardware Option Slots. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Hangry Hangry Dragon",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, whenever "
+            "Dragon Black ICE installed on the Cyberdeck destroys a Program, its Rez is restored to maximum. "
+            "(Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Perfume Shoppe",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, Skunk Black "
+            "ICE Programs take up 1 Program Slot instead of 2. Takes 2 Hardware Option Slots. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Smithy",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, as a Meat "
+            "Action, the user may convert all installed Sword Programs into Banhammer Programs and all "
+            "installed Banhammer Programs into Sword Programs. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Snaketrap",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, prevents "
+            "the first Black ICE or Program effect during a Netrun that would destroy a Program at random "
+            "on the user's deck. Multiple installations do nothing. 1 Hardware Option Slot. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Swamp Mist",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, Wisp Black "
+            "ICE installed on the Cyberdeck deals 2d6 damage instead of 1d6. However, no Black ICE other "
+            "than Wisp can be installed on the Cyberdeck while installed. Takes 2 Hardware Option Slots. "
+            "(Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
+    {
+        "name": "Swifty Clean",
+        "category": "Deck Option",
+        "description": (
+            "Interface RED Vol 3: Midnight with the Upload. Cyberdeck Hardware. While installed, the user "
+            "can perform the Cloak Interface Ability twice with a single NET Action, taking the higher "
+            "outcome. However, Cloak can only be used once per Netrun while installed. "
+            "Takes 2 Hardware Option Slots. (Expensive)"
+        ),
+        "weight": 0,
+        "value": 500,
+    },
 ]
 
 # Extend with Cyberpunk RED fashion items (core rulebook)
@@ -3912,6 +4062,14 @@ cyberdecks = [
         "program_slots": 0,
         "any_slots": 5,
         "value": 100,
+    },
+    {
+        "name": "Kirama Advanced Deck",
+        "description": "Interface RED Vol 3: Midnight with the Upload. Cyberdeck with 5 slots to install either Hardware or Programs. (Expensive)",
+        "hardware_slots": 0,
+        "program_slots": 0,
+        "any_slots": 5,
+        "value": 500,
     },
     {
         "name": "Kiraama Advanced Deck",
