@@ -1219,69 +1219,76 @@ Builders use |w+elosetup|n to create the ELO Lobby room. Then add exits to build
         "aliases": ["rent", "apartments", "housing", "rent workflow"],
         "category": "Economy",
         "text": """
-The apartment rental system lets you rent or purchase housing in Night City. Costs are in Eurodollars (eb). Rent is a |wthreshold check|n -- you must maintain enough eb to keep your apartment, but no eb is deducted monthly. You can also |wpurchase|n an apartment outright to avoid monthly checks.
+The apartment rental system lets you rent or purchase housing in Night City. Costs are in Eurodollars (eb). Rent is a |wthreshold check|n--you must maintain enough eb to keep your apartment, but no eb is deducted monthly. You can also |wpurchase|n an apartment outright to avoid monthly checks.
 
 |yFinding Apartments|n
 
 |w+rent/search|n
-  List all buildings with available apartments. Shows location, area code, available slots, and apartment types.
+  List all buildings with available apartments. Shows location (hierarchy), area code, available slots, apartment types, and any non-default cost modifiers. Use this to find where to rent without scouring the grid.
 
 |yRenting an Apartment|n
 
 |w+rent <type>|n
-  Rent at your current location. Specify the apartment type exactly (e.g. |w+rent Studio Apartment|n). Use |w+rent/status|n in the lobby or on a floor to see available types. Can be used in a building |wlobby|n, on a specific |wfloor|n, or inside a |wvacant apartment|n.
+  Rent at your current location. You must specify an apartment type (e.g. |w+rent Studio Apartment|n or |w+rent One-Bedroom Apartment|n). Use |w+rent/status|n in the lobby or on a floor to see available types.
+  Use this in:
+  - A building |wlobby|n -- assigns you an apartment on a random floor
+  - On a specific |wfloor|n -- assigns you an apartment on that floor
+  - Inside a |wvacant apartment|n -- take over the existing unit
 
 You need enough Eurodollars to meet the rent threshold. Check your balance with |wbalance|n.
 
-|yApartment Types, Costs and Rooms|n  |x(Source: Cyberpunk Red Core, p.378)|n
-
-|m+----------------------------+------------+------------+------------------------------------------+|n
-|m||n |yType                       |n |m|||n |yRent/mo    |n |m|||n |yBuy Price  |n |m|||n |yRooms                                    |n |m||n
-|m+----------------------------+------------+------------+------------------------------------------+|n
-|m||n Living on the Street        |m|||n    --      |m|||n    --      |m|||n Street                                   |m||n
-|m||n Living on the Street/Vehicle|m|||n    --      |m|||n    --      |m|||n Vehicle                                  |m||n
-|m||n Cube Hotel                  |m|||n    500eb   |m|||n    N/A     |m|||n Cube                                     |m||n
-|m||n Cargo Container             |m|||n  1,000eb   |m|||n 15,000eb   |m|||n Container                                |m||n
-|m||n Studio Apartment            |m|||n  1,500eb   |m|||n 25,000eb   |m|||n Main Room                                |m||n
-|m||n One-Bedroom Apartment       |m|||n  2,000eb   |m|||n    --      |m|||n Main Room, Bedroom                       |m||n
-|m||n Two-Bedroom Apartment       |m|||n  2,500eb   |m|||n 35,000eb   |m|||n Main Room, Bedroom 1, Bedroom 2           |m||n
-|m||n Corporate Conapt            |m|||n  Exec only |m|||n    N/A     |m|||n Main Room, Bedroom, Side Room             |m||n
-|m||n Upscale Conapt              |m|||n  7,500eb   |m|||n 85,000eb   |m|||n Main Room, Bedroom 1, Bedroom 2, Side Room|m||n
-|m||n Luxury Penthouse            |m|||n 15,000eb   |m|||n150,000eb   |m|||n Main Room, Bed 1, Bed 2, Side Room, Patio  |m||n
-|m||n Beaverville House           |m|||n  Exec only |m|||n200,000eb   |m|||n Main Room, Bed 1, Bed 2, Side Room, Yard   |m||n
-|m||n Beaverville McMansion       |m|||n  Exec only |m|||n500,000eb   |m|||n Main Room, Bed 1-3, Side Room, Yard        |m||n
-|m+----------------------------+------------+------------+------------------------------------------+|n
-
-|xCorporate Conapt is granted free to Exec characters at Teamwork Rank 2. Beaverville House at Rank 7. Beaverville McMansion or Luxury Penthouse at Rank 10.|n
-
 |yCustomizing Your Apartment|n
 
-|w+rent/desc =<text>|n  -- Change the description of your current room.
-|w+rent/name =<name>|n  -- Rename the room (e.g. "Bedroom 2" to "Workshop").
-|w+rent/exit <exit>=<new name>|n  -- Rename an exit display label.
-|w+rent/home|n  -- Set this apartment as your IC home.
+|w+rent/desc =<text>|n
+  Change the description of the room you're in.
+
+|w+rent/name =<name>|n
+  Rename the room (e.g. change "Bedroom 2" to "Workshop").
+
+|w+rent/exit <exit>=<new name>|n
+  Change the display name of an exit. Aliases (B1, B2, O, etc.) stay the same.
+  Example: +rent/exit Bedroom 2=Workshop
+
+|w+rent/home|n
+  Set this apartment as your IC home. Use the |whome|n command to return here.
 
 |yCo-Residents and Partners|n
 
-|w+rent/add <character>|n  -- Add a co-resident (primary renter only, One-Bedroom and larger).
-|w+rent/remove <character>|n  -- Remove a co-resident.
-|w+rent/partner <character>|n  -- Invite a partner to move in. They confirm with |w+rent/partner confirm|n at your apartment.
+|w+rent/add <character>|n
+  Add a co-resident (primary renter only). They get a room and can set this as their home. Available on One-Bedroom and larger apartments.
+
+|w+rent/remove <character>|n
+  Remove a co-resident (primary renter only).
+
+|w+rent/partner <character>|n
+  Invite a romantic partner to move in. They must go to your apartment and type |w+rent/partner confirm|n to accept. Partners have the same authority as you.
 
 |yDoors and Security|n
 
-|w+rent/lock [<exit>]|n  -- Lock the door.
-|w+rent/unlock [<exit>]|n  -- Unlock the door.
+|w+rent/lock [<exit>]|n
+  Lock the door. Residents and partners can lock/unlock.
+
+|w+rent/unlock [<exit>]|n
+  Unlock the door.
 
 |yOther Commands|n
 
-|w+rent/purchase|n  -- Buy the apartment outright. One-time eb cost, no more monthly checks.
-|w+rent/info|n  -- Show rental details (type, cost, residents, status).
-|w+rent/leave|n  -- Leave your rental.
-|whome|n  -- Return to your IC home (after using +rent/home).
+|w+rent/purchase|n
+  Buy the apartment outright. Deducts eb once; no more monthly rent checks.
+
+|w+rent/info|n
+  Show rental details (type, cost, residents, status).
+
+|w+rent/leave|n
+  Leave your rental. If you're primary, a co-resident takes over or the apartment becomes vacant.
+
+|whome|n
+  Return to your IC home (after using +rent/home).
 
 |yLocation Format|n
 
 Apartments display as: |wRoom/Apt# -- Building Name -- District|n
+Example: 212 Main Room -- Kabuki Heights -- Watson
 
 See also: +help balance, +help rental staff
         """,
@@ -1371,28 +1378,18 @@ Custom apartments use generic room names (Room 2, Room 3, ...). Add "Custom" to 
 5. (Repeat for each floor) dig Floor 4; add exits lobby<->floor; +manage/addroom; +manage/floor 4 6
 6. Players can now +rent in the lobby or on any floor.
 
-|yApartment Types, Base Costs and Room Layouts|n  |x(Source: Cyberpunk Red Core, p.378)|n
+|yRoom Layouts|n
 
-|m+----------------------------+------------+------------+------------------------------------------+|n
-|m||n |yType                       |n |m|||n |yRent/mo    |n |m|||n |yBuy Price  |n |m|||n |yRooms                                    |n |m||n
-|m+----------------------------+------------+------------+------------------------------------------+|n
-|m||n Living on the Street        |m|||n    --      |m|||n    --      |m|||n Street                                   |m||n
-|m||n Living on the Street/Vehicle|m|||n    --      |m|||n    --      |m|||n Vehicle                                  |m||n
-|m||n Cube Hotel                  |m|||n    500eb   |m|||n    N/A     |m|||n Cube                                     |m||n
-|m||n Cargo Container             |m|||n  1,000eb   |m|||n 15,000eb   |m|||n Container                                |m||n
-|m||n Studio Apartment            |m|||n  1,500eb   |m|||n 25,000eb   |m|||n Main Room                                |m||n
-|m||n One-Bedroom Apartment       |m|||n  2,000eb   |m|||n    --      |m|||n Main Room, Bedroom                       |m||n
-|m||n Two-Bedroom Apartment       |m|||n  2,500eb   |m|||n 35,000eb   |m|||n Main Room, Bedroom 1, Bedroom 2           |m||n
-|m||n Corporate Conapt            |m|||n  Exec only |m|||n    N/A     |m|||n Main Room, Bedroom, Side Room             |m||n
-|m||n Upscale Conapt              |m|||n  7,500eb   |m|||n 85,000eb   |m|||n Main Room, Bedroom 1, Bedroom 2, Side Room|m||n
-|m||n Luxury Penthouse            |m|||n 15,000eb   |m|||n150,000eb   |m|||n Main Room, Bed 1, Bed 2, Side Room, Patio  |m||n
-|m||n Beaverville House           |m|||n  Exec only |m|||n200,000eb   |m|||n Main Room, Bed 1, Bed 2, Side Room, Yard   |m||n
-|m||n Beaverville McMansion       |m|||n  Exec only |m|||n500,000eb   |m|||n Main Room, Bed 1-3, Side Room, Yard        |m||n
-|m+----------------------------+------------+------------+------------------------------------------+|n
+Apartment types generate rooms automatically:
+- One-Bedroom: Main Room, Bedroom
+- Two-Bedroom: Main Room, Bedroom 1, Bedroom 2
+- Corporate Conapt: Main Room, Bedroom, Side Room
+- Upscale Conapt: Main Room, Bedroom 1, Bedroom 2, Side Room
+- Luxury Penthouse: Main Room, Bedroom 1, Bedroom 2, Side Room, Patio
+- Beaverville House: Main Room, Bedroom 1, Bedroom 2, Side Room, Yard
+- McMansion: Main Room, Bedroom 1-3, Side Room, Yard
 
-|xCorporate Conapt: Exec Rank 2 free. Beaverville House: Exec Rank 7 free. McMansion/Penthouse: Exec Rank 10 free.|n
-|xCost modifiers set with +manage/setcost are added to the base costs above.|n
-|xExits use fixed aliases (B1, B2, SR, O, etc.) that players cannot change.|n
+Exits use aliases (B1, B2, SR, O, etc.) that players cannot change.
 
 See also: +help rental workflow, +help room creation
         """,
