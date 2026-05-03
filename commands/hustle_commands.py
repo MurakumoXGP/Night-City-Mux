@@ -32,8 +32,10 @@ def hustle_menu(caller):
         text += "You have a full seven days free. Time to earn some eb.\n\n"
         text += f"Your role: |c{role or 'Unknown'}|n\n"
         text += f"Role Ability Rank: |c{rank}|n (tier {tier})\n\n"
-        text += "You'll roll 1d6 to determine what you did this week and how much you earned.\n"
-        text += "Higher ranks mean better pay for the same outcome.\n\n"
+        text += "You'll roll 1d100 to determine what you did this week and how much you earned.\n"
+        text += "Higher ranks mean better pay for the same outcome.\n"
+        text += "Roll 100 is a legendary result worth 1,000eb regardless of rank.\n"
+        text += "Hustle resets every Friday at midnight PST.\n\n"
         text += "Do you want to attempt your hustle?"
 
         options = (

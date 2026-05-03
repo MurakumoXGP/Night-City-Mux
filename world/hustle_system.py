@@ -88,15 +88,36 @@ class HustleSystem(DefaultScript):
             self.db.last_attempt = {}
 
     def at_repeat(self):
-        """Weekly reset - clear attempt tracking so everyone can hustle again."""
+        """Friday midnight PST reset - clear attempt tracking so everyone can hustle again."""
         self.db.last_attempt = {}
-        logger.log_info("HustleSystem: Weekly reset. Everyone can attempt a hustle.")
+        logger.log_info("HustleSystem: Weekly reset (Friday midnight PST). Everyone can attempt a hustle.")
 
     def can_attempt_hustle(self, character):
-        """Check if the character can attempt a hustle this week (7 days since last)."""
-        last = self.db.last_attempt.get(character.id, 0)
-        now = gametime.gametime(absolute=True)
-        return (now - last) >= self.interval
+        """
+        Check if the character can attempt a hustle this week.
+        Resets every Friday at midnight PST (UTC-8 standard, UTC-7 daylight).
+        A character can hustle once per reset window.
+        """
+        import time
+        import datetime
+
+        # Determine current Friday midnight PST boundary
+        # PST = UTC-8. Use UTC-8 for consistency regardless of daylight saving.
+        UTC_OFFSET = -8
+        now_utc = datetime.datetime.utcnow()
+        now_pst = now_utc + datetime.timedelta(hours=UTC_OFFSET)
+
+        # Find the most recent Friday midnight PST
+        # weekday(): Monday=0, Friday=4
+        days_since_friday = (now_pst.weekday() - 4) % 7
+        last_friday_midnight = now_pst.replace(hour=0, minute=0, second=0, microsecond=0) - datetime.timedelta(days=days_since_friday)
+
+        # Convert last Friday midnight PST back to UTC timestamp for comparison
+        last_friday_utc = last_friday_midnight - datetime.timedelta(hours=UTC_OFFSET)
+        last_friday_ts = last_friday_utc.timestamp()
+
+        last_attempt_ts = self.db.last_attempt.get(character.id, 0)
+        return last_attempt_ts < last_friday_ts
 
     def has_valid_role(self, character):
         """Check if character has a role with a hustle table."""
@@ -131,7 +152,7 @@ class HustleSystem(DefaultScript):
             return False, f"No hustle table for role '{role}'.", 0, 0, 0
 
         rank = get_role_ability_rank(character, role_key)
-        roll = random.randint(1, 6)
+        roll = random.randint(1, 100)
         activity, eb = get_hustle_result(role_key, roll, rank)
 
         if activity is None:
