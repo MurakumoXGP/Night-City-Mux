@@ -598,6 +598,12 @@ class Character(DefaultCharacter):
                 
                 # Mark first login as complete
                 self.attributes.add("first_login_complete", True)
+
+                # Announce to entire server that this character logged in for the first time
+                from evennia.server.sessionhandler import SESSION_HANDLER
+                announcement = f"|y[ |wNIGHT CITY|y ] |c{self.key}|n has logged into Night City for the first time.|n"
+                for session in SESSION_HANDLER.get_sessions():
+                    session.msg(announcement)
             
             # Check for unread mail
             if self.should_show_notification("mail"):

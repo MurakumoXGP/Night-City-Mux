@@ -786,13 +786,20 @@ class CmdHarm(AdminCommand):
 
 class CmdApprove(AdminCommand):
     """
-    Approve a player's character.
+    Approve a player's character and announce it server-wide.
 
     Usage:
       approve <character_name>
+      approve <character_name>/<staff message>
 
-    This command approves a player's character, removing the 'unapproved' tag
-    and adding the 'approved' tag. This allows the player to start playing.
+    Approves a player's character, removing the unapproved tag and adding
+    the approved tag. Sends a server-wide announcement to all connected
+    players and staff. An optional message after / is broadcast with the
+    announcement. If no message is provided, a default message is used.
+
+    Examples:
+      approve Mnemosyne
+      approve Mnemosyne/Street Solo with a mysterious past. Welcome to Night City!
     """
     key = "approve"
     locks = "cmd:perm(Admin) or perm(Builder)"
@@ -800,14 +807,21 @@ class CmdApprove(AdminCommand):
 
     def func(self):
         if not self.args:
-            self.caller.msg("Usage: approve <character_name>")
+            self.caller.msg("Usage: approve <character_name>[/<message>]")
             return
 
-        target = self.caller.search(self.args, global_search=True)
+        if "/" in self.args:
+            char_name, staff_msg = self.args.split("/", 1)
+            char_name = char_name.strip()
+            staff_msg = staff_msg.strip()
+        else:
+            char_name = self.args.strip()
+            staff_msg = ""
+
+        target = self.caller.search(char_name, global_search=True)
         if not target:
             return
 
-        # Brand new characters may have neither tag - treat as unapproved
         if target.tags.has("approved", category="approval"):
             self.caller.msg(f"{target.name} is already approved.")
             return
@@ -817,7 +831,16 @@ class CmdApprove(AdminCommand):
         logger.log_info(f"{target.name} has been approved by {self.caller.name}")
 
         self.caller.msg(f"You have approved {target.name}.")
-        target.msg("Your character has been approved. You may now begin playing.")
+        target.msg("|gYour character has been approved. You may now begin playing.|n")
+
+        if staff_msg:
+            announcement = f"|y[ |wNIGHT CITY|y ] |c{target.name}|n is approved for play! {staff_msg}|n"
+        else:
+            announcement = f"|y[ |wNIGHT CITY|y ] |c{target.name}|n is approved for play!|n"
+
+        from evennia.server.sessionhandler import SESSION_HANDLER
+        for session in SESSION_HANDLER.get_sessions():
+            session.msg(announcement)
 
 class CmdUnapprove(AdminCommand):
     """

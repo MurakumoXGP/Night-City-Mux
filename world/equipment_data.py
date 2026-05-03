@@ -2270,7 +2270,7 @@ armors = [
         "name": "Light Armorjack",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 100
     },
@@ -2278,7 +2278,7 @@ armors = [
         "name": "Medium Armorjack",
         "sp": 12,
         "ev": 2,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 2,
         "value": 500
     },
@@ -2286,7 +2286,7 @@ armors = [
         "name": "Heavy Armorjack",
         "sp": 13,
         "ev": 2,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 2,
         "value": 1000
     },
@@ -2294,7 +2294,7 @@ armors = [
         "name": "Flak",
         "sp": 15,
         "ev": 4,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 3,
         "value": 5000
     },
@@ -2302,7 +2302,7 @@ armors = [
         "name": "Metalgear",
         "sp": 18,
         "ev": 4,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 3,
         "value": 5000
     },
@@ -2367,7 +2367,7 @@ armors = [
         "name": "The Dirk Combat Jacket",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 500,
         "description": "Zhukova International. Light Armorjack with Leisurewear appearance. Two standard-size ammo clips can be concealed without a Check."
@@ -2403,7 +2403,7 @@ armors = [
         "name": "Laser Light Street Jacket",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 500,
         "description": "Light Armorjack with Urban Flash appearance. Counts as 1 Light Tattoo for Style bonus."
@@ -2421,7 +2421,7 @@ armors = [
         "name": "Montage Variable Clothing Line",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 500,
         "description": "Light Armorjack with programmable appearance (Generic Chic or Gang Colors). Styles can be swapped with a paired Agent."
@@ -2439,7 +2439,7 @@ armors = [
         "name": "SkidRow Trench",
         "sp": 13,
         "ev": 4,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 2,
         "value": 100,
         "description": "Flak Body Armor with SP 13 instead of 15."
@@ -2448,7 +2448,7 @@ armors = [
         "name": "T&C Executive Armor",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 1000,
         "description": "Light Armorjack with Businesswear appearance. Repairs 1 SP per day when no damage taken."
@@ -2457,7 +2457,7 @@ armors = [
         "name": "Corporate Island",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 500,
         "description": "Nu-Tek Light Armorjack with Businesswear appearance. Comes in dress or casual island styles."
@@ -2495,7 +2495,7 @@ armors = [
         "name": "Molly's Scavenged Armor",
         "sp": 11,
         "ev": 0,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 1,
         "value": 50,
         "description": "Judie's handcrafted body armor. SP 11. Once ablated, SP cannot be restored. At 0 SP, it falls off the wearer."
@@ -2514,7 +2514,7 @@ armors = [
         "name": "Light Metalgear(R)",
         "sp": 16,
         "ev": 3,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 3,
         "value": 1000,
         "description": "Metalgear(R) with SP 16. Armor Penalty -3 to REF, DEX, and MOVE."
@@ -2523,7 +2523,7 @@ armors = [
         "name": "Hybrid Metalgear(R)",
         "sp": 17,
         "ev": 4,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 3,
         "value": 2552,
         "description": "Metalgear(R) with SP 17. Armor Penalty -3 to REF, -4 to DEX, -4 to MOVE."
@@ -2532,7 +2532,7 @@ armors = [
         "name": "Heavy Metalgear(R)",
         "sp": 19,
         "ev": 5,
-        "locations": "Body",
+        "locations": "Body, Head",
         "weight": 4,
         "value": 5000,
         "description": "Metalgear(R) with SP 19. Armor Penalty -4 to REF, -5 to DEX, -5 to MOVE."
