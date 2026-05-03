@@ -39,7 +39,7 @@ def hustle_menu(caller):
         text += "Do you want to attempt your hustle?"
 
         options = (
-            {"key": ("Yes", "y"), "desc": "Roll 1d6 and complete your hustle", "goto": "attempt_hustle"},
+            {"key": ("Yes", "y"), "desc": "Roll 1d100 and complete your hustle", "goto": "attempt_hustle"},
             {"key": ("No", "n"), "desc": "Return to the game", "goto": "exit_menu"},
         )
         return text, options
@@ -50,7 +50,7 @@ def hustle_menu(caller):
 
 
 def attempt_hustle(caller):
-    """Roll 1d6, look up result, pay character."""
+    """Roll 1d100, look up result, pay character."""
     logger.log_info(f"Entering attempt_hustle for {caller.name}")
     try:
         hustle_system = get_or_create_hustle_system()
@@ -68,7 +68,7 @@ def attempt_hustle(caller):
             return None
 
         result_text = "|wHustle Complete|n\n"
-        result_text += f"Roll: 1d6 = |c{roll}|n\n"
+        result_text += f"Roll: 1d100 = |c{roll}|n\n"
         result_text += f"Role Ability Rank: |c{rank}|n\n"
         result_text += f"Result: {message}\n"
         caller.msg(result_text)
@@ -95,7 +95,13 @@ class CmdHustle(Command):
       hustle
 
     Spend a full seven days working a side job. Your pay depends on your
-    Role, Role Ability Rank, and a 1d6 roll (Cyberpunk Red rules as written).
+    Role, Role Ability Rank, and a 1d100 roll.
+
+    The hustle resets every Friday at midnight PST. You may only attempt
+    your hustle once per reset window.
+
+    In Night City we use a custom Hustle matrix with a much bigger matrix
+    and more varied rewards. You might even hit the grand prize if you roll 100.
     """
     key = "hustle"
     locks = "cmd:all()"
@@ -111,24 +117,29 @@ class CmdHustle(Command):
 
 class CmdClearHustleAttempt(Command):
     """
-    Clear the current hustle attempt for a character.
+    Clear a character's hustle attempt so they can hustle again immediately.
 
     Usage:
       clearhustle <character_name>
+      +hustle/reset <character_name>
 
-    Admin-only. Clears the hustle attempt for a character, allowing them
-    to attempt another hustle before the weekly reset.
+    Admin only. Removes the hustle attempt record for a character, allowing
+    them to attempt their hustle again before the weekly reset. The weekly
+    reset (Friday midnight PST) still applies normally for everyone else.
+    This only makes the system forget the character already hustled this week.
     """
     key = "clearhustle"
+    aliases = ["+hustle/reset"]
     locks = "cmd:perm(Admin)"
     help_category = "Admin"
 
     def func(self):
-        if not self.args:
-            self.caller.msg("Usage: clearhustle <character_name>")
+        args = self.args.strip().lstrip("/").strip()
+        if not args:
+            self.caller.msg("Usage: clearhustle <character_name>  or  +hustle/reset <character_name>")
             return
 
-        target = self.caller.search(self.args, global_search=True)
+        target = self.caller.search(args, global_search=True)
         if not target:
             return
 
