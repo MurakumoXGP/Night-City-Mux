@@ -3,6 +3,7 @@ from world.mission_board.services import init_mission_system
 from world.bulletin_boards import init_bulletin_board_system
 from world.hustle_system import init_hustle_system
 from world.maker.scripts import get_or_create_maker_script
+from world.hangout_script import init_hangout_system
 from evennia.utils.logger import log_err
 
 class WorldScript(DefaultScript):
@@ -30,6 +31,7 @@ class WorldScript(DefaultScript):
             ("Bulletin Board System", init_bulletin_board_system),
             ("Hustle System", init_hustle_system),
             ("Maker Craft Processor", get_or_create_maker_script),
+            ("Hangout Daily Script", init_hangout_system),
         ]
 
         for system_name, init_func in systems:

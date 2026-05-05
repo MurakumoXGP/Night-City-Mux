@@ -1,6 +1,3 @@
-"""
-Hangouts system - Staff/Admin commands for Night City MUSH.
-"""
 from evennia.commands.default.muxcommand import MuxCommand
 from world.hangouts.models import HangoutDB
 
@@ -15,6 +12,7 @@ class CmdHangoutAdmin(MuxCommand):
         +hoadmin/setdesc <#>=<description>
         +hoadmin/setdistrict <#>=<district>
         +hoadmin/delete <#>=yes
+        +hoadmin/set <#>
         +hoadmin/setho <area_code>
         +hoadmin/setrewards eb=<min>-<max>
         +hoadmin/setrewards ip=<min>-<max>
@@ -27,6 +25,7 @@ class CmdHangoutAdmin(MuxCommand):
         +hoadmin/setroom 1=NC01
         +hoadmin/setdesc 1=A seedy bar in Watson known for its Braindance shows.
         +hoadmin/setdistrict 1=Watson
+        +hoadmin/set 3
         +hoadmin/setho NC01
         +hoadmin/setrewards eb=10-50
         +hoadmin/setrewards ip=0.5-2.0
@@ -120,6 +119,36 @@ class CmdHangoutAdmin(MuxCommand):
             )
             caller.msg(
                 "Use |w+hoadmin/setroom|n and |w+hoadmin/setdesc|n to finish setup."
+            )
+            return
+
+        # +hoadmin/set <#> -- set featured hangout by ID directly
+        if "set" in self.switches:
+            if not self.args:
+                caller.msg("Usage: +hoadmin/set <hangout #>")
+                return
+            try:
+                hangout_id = int(self.args.strip())
+            except ValueError:
+                caller.msg("|rPlease provide a valid hangout number.|n")
+                return
+
+            script = self._get_script()
+            if not script:
+                caller.msg(
+                    "|rHangout script is not running. "
+                    "Ask a developer to start it.|n"
+                )
+                return
+
+            ok, result = script.force_new_hangout(hangout_id)
+            if not ok:
+                caller.msg(f"|r{result}|n")
+                return
+
+            caller.msg(
+                f"|gToday's featured hangout has been set to "
+                f"|w#{hangout_id}: {result.key}|g.|n"
             )
             return
 

@@ -36,8 +36,6 @@ from .cyberware_admin_commands import CmdAddCyberware, CmdParentCyberware, CmdUn
 from .staff_commands import CmdRemoveCyberware, CmdUninstallCyberware, CmdSetLifepath, CmdReputation, CmdNotoriety, CmdConfig
 from .economy import CmdAdminMoney, CmdGiveMoney, CmdBalance, CmdLeaveRental
 from .rent_commands import CmdRent, CmdHome
-from .humanity_commands import CmdHumanity
-from .rent_award_command import CmdRentAward
 from world.cyberpunk_sheets.commerce import CmdBuy, CmdRefund, CmdListItems, CmdGive, CmdSellItem, CmdHaggle
 from .ip_commands import CmdIP
 from .vote_commands import CmdVote
@@ -153,7 +151,6 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdManageBuilding())
         self.add(CmdRoom())
         self.add(CmdAreaManage())
-        self.add(CmdGo())
         self.add(CmdCombat())
         self.add(CmdInitiative())
         self.add(CmdAttack())
@@ -177,7 +174,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdLfrp())
         self.add(CmdWhere())
         self.add(CmdCoords())
-
+        self.add(CmdGo())
         self.add(CmdPlots())
         self.add(CmdWatch())
         self.add(CmdWeather())
@@ -221,8 +218,6 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         #self.add(CmdEnterVehicle())
         #self.add(CmdExitVehicle())
         self.add(CmdRent())
-        self.add(CmdHumanity())
-        self.add(CmdRentAward())
         self.add(CmdHome())
         self.add(CmdLeaveRental())
         self.add(CmdOOCChat())
