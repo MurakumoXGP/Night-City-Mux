@@ -1,175 +1,269 @@
 """
-Daily Hangout Script for Night City MUSH.
+Hangout daily script for Night City MUSH.
 
-Manages the daily featured hangout selection and reward system.
-- Selects a new featured hangout at midnight PST daily
-- Awards eb OR IP to approved players in the featured hangout
-  at random intervals per character (25-45 minutes)
-- Requires 2+ approved players in the room for rewards
+Two responsibilities:
+1. Daily selection -- at midnight picks a random active hangout with a room
+   assigned as the featured hangout of the day. Stores featured_hangout_id
+   and last_selection_date on self.db.
+
+2. Reward loop -- every 5 minutes checks the featured hangout room. If 2+
+   approved players are present, gives each eligible character either EB or
+   IP (randomly chosen, not both) after a random 25-45 minute personal timer.
+   Only writes to DB when state changes. Prunes stale entries for characters
+   who have left or logged out.
+
+Staff override: force_new_hangout(hangout_id) sets featured hangout manually.
+Reward ranges: set_rewards(eb_min, eb_max, ip_min, ip_max) called by +hoadmin.
+
+Initialized by world/world_scripts.py via init_hangout_system().
 """
+
 import random
-from datetime import datetime
-import pytz
-from evennia import DefaultScript
-from evennia.utils import logger
+import datetime
+from evennia import DefaultScript, create_script
+from evennia.scripts.models import ScriptDB
+from evennia.utils.logger import log_info, log_err
 
 
-class HangoutDailyScript(DefaultScript):
+# Reward timer bounds in seconds
+REWARD_TIMER_MIN = 25 * 60   # 25 minutes
+REWARD_TIMER_MAX = 45 * 60   # 45 minutes
+
+# Minimum approved players required in room to trigger rewards
+MIN_PLAYERS = 2
+
+
+class HangoutFeaturedScript(DefaultScript):
+    """
+    Daily selection + 5-minute reward loop for the featured hangout.
+    """
 
     def at_script_creation(self):
         self.key = "hangout_daily_script"
-        self.desc = "Manages daily hangout selection and rewards"
-        self.interval = 60
+        self.desc = "Daily hangout selection and reward script"
+        self.interval = 300   # 5 minutes
         self.persistent = True
-        self.db.featured_hangout_id = None
-        self.db.last_reset_date = None
+        self.start_delay = False
+
+        # Default reward ranges
         self.db.eb_min = 10
         self.db.eb_max = 50
         self.db.ip_min = 0.5
         self.db.ip_max = 2.0
-        self.db.next_reward_times = {}
+
+        # Featured hangout
+        self.db.featured_hangout_id = None
+        self.db.last_selection_date = None
+
+        # Reward timers: {character_id: server_timestamp_when_reward_fires}
+        # Only written when a character enters or receives a reward.
+        self.db.next_reward_time = {}
+
+        self._try_daily_selection()
+
+    def at_start(self):
+        """Called when the script starts or server restarts."""
+        self._try_daily_selection()
 
     def at_repeat(self):
-        self._check_daily_reset()
-        self._check_rewards()
+        """Called every 5 minutes. Runs daily selection check then reward loop."""
+        self._try_daily_selection()
+        self._process_rewards()
 
-    def _get_pst_now(self):
-        pst = pytz.timezone("America/Los_Angeles")
-        return datetime.now(pst)
+    # ------------------------------------------------------------------
+    # Daily selection
+    # ------------------------------------------------------------------
 
-    def _check_daily_reset(self):
-        now = self._get_pst_now()
-        today_str = now.strftime("%Y-%m-%d")
-        if self.db.last_reset_date == today_str:
-            return
-        self._select_new_hangout()
-        self.db.last_reset_date = today_str
-
-    def _select_new_hangout(self, forced_id=None):
-        from world.hangouts.models import HangoutDB
-
-        hangouts = [h for h in HangoutDB.get_all_hangouts() if h.db.active and h.db.room]
-
-        if not hangouts:
-            logger.log_info("HangoutScript: No active hangouts available.")
+    def _try_daily_selection(self):
+        """
+        Select a new featured hangout if we have not done so today.
+        Fires at most once per calendar day.
+        """
+        today = datetime.date.today().isoformat()
+        if self.db.last_selection_date == today:
             return
 
-        old_hangout_id = self.db.featured_hangout_id
-        old_hangout = None
-        if old_hangout_id:
-            old_hangout = HangoutDB.get_by_hangout_id(old_hangout_id)
+        self._select_random_hangout()
+        self.db.last_selection_date = today
 
-        if forced_id:
-            new_hangout = HangoutDB.get_by_hangout_id(forced_id)
-            if not new_hangout:
-                logger.log_info(f"HangoutScript: Forced hangout ID {forced_id} not found.")
+    def _select_random_hangout(self):
+        """
+        Pick a random active hangout that has a room assigned.
+        Stores its hangout_id as the featured hangout.
+        """
+        try:
+            from world.hangouts.models import HangoutDB
+            candidates = [
+                h for h in HangoutDB.get_all_hangouts()
+                if h.db.active and h.db.room is not None
+            ]
+            if not candidates:
+                log_info("HangoutDailyScript: No eligible hangouts for daily selection.")
+                self.db.featured_hangout_id = None
                 return
-        else:
-            choices = [h for h in hangouts if h.db.hangout_id != old_hangout_id]
-            if not choices:
-                choices = hangouts
-            new_hangout = random.choice(choices)
 
-        self.db.featured_hangout_id = new_hangout.db.hangout_id
-
-        # Notify players in old hangout room
-        if old_hangout and old_hangout.db.room:
-            new_name = new_hangout.key
-            new_code = ""
-            if new_hangout.db.room and new_hangout.db.room.db.area_code:
-                new_code = f" ({new_hangout.db.room.db.area_code})"
-            old_hangout.db.room.msg_contents(
-                f"|yThe hangout scene has moved! Today it has shifted to "
-                f"|w{new_name}|y{new_code}.|n"
+            chosen = random.choice(candidates)
+            self.db.featured_hangout_id = chosen.db.hangout_id
+            log_info(
+                f"HangoutDailyScript: Daily featured hangout set to "
+                f"#{chosen.db.hangout_id} - {chosen.db.room.key if chosen.db.room else chosen.key}"
             )
+        except Exception as e:
+            log_err(f"HangoutDailyScript: Error during daily selection: {e}")
 
-        logger.log_info(
-            f"HangoutScript: New featured hangout is "
-            f"{new_hangout.key} (#{new_hangout.db.hangout_id})"
-        )
+    # ------------------------------------------------------------------
+    # Reward loop
+    # ------------------------------------------------------------------
 
-    def _check_rewards(self):
-        from world.hangouts.models import HangoutDB
-        from world.cyberpunk_sheets.services import CharacterMoneyService
-        from world.utils.character_utils import is_character_approved
-
-        if not self.db.featured_hangout_id:
-            return
-
-        hangout = HangoutDB.get_by_hangout_id(self.db.featured_hangout_id)
+    def _process_rewards(self):
+        """
+        Every 5 minutes:
+        - Find the featured hangout room.
+        - Bail out if fewer than MIN_PLAYERS approved characters are present.
+        - For each eligible character, check if their personal timer has fired.
+        - Award EB or IP (randomly chosen, not both) and reset their timer.
+        - Prune stale entries for characters no longer in the room.
+        """
+        hangout = self.get_featured_hangout()
         if not hangout or not hangout.db.room:
             return
 
         room = hangout.db.room
+        room_name = room.key
 
-        # Get approved players in the room
-        players = [
+        # Approved, logged-in characters currently in the room
+        approved_chars = [
             obj for obj in room.contents
-            if obj.has_account and is_character_approved(obj)
+            if obj.has_account
+            and not obj.tags.get("unapproved", category="approval")
         ]
 
-        if len(players) < 2:
+        if len(approved_chars) < MIN_PLAYERS:
+            # Not enough players -- prune any stale timers and return
+            if self.db.next_reward_time:
+                present_ids = {obj.id for obj in approved_chars}
+                stale = [cid for cid in self.db.next_reward_time if cid not in present_ids]
+                if stale:
+                    timers = dict(self.db.next_reward_time)
+                    for cid in stale:
+                        del timers[cid]
+                    self.db.next_reward_time = timers
             return
 
-        now_ts = datetime.now().timestamp()
+        import time
+        now = time.time()
+        timers = dict(self.db.next_reward_time)
+        changed = False
+        present_ids = {obj.id for obj in approved_chars}
 
-        if not self.db.next_reward_times:
-            self.db.next_reward_times = {}
+        # Prune stale entries for characters no longer present
+        stale = [cid for cid in timers if cid not in present_ids]
+        if stale:
+            for cid in stale:
+                del timers[cid]
+            changed = True
 
-        next_times = dict(self.db.next_reward_times)
+        for char in approved_chars:
+            cid = char.id
 
-        for player in players:
-            pid = player.id
-            next_time = next_times.get(pid, 0)
-
-            if next_time == 0:
-                # First time - set initial random timer
-                delay = random.randint(25, 45) * 60
-                next_times[pid] = now_ts + delay
+            if cid not in timers:
+                # New arrival -- assign a personal reward timer
+                timers[cid] = now + random.randint(REWARD_TIMER_MIN, REWARD_TIMER_MAX)
+                changed = True
                 continue
 
-            if now_ts < next_time:
+            if now < timers[cid]:
+                # Timer has not fired yet
                 continue
 
-            # Time to reward this player
-            self._give_reward(player, hangout.key)
+            # Timer fired -- award EB or IP, not both
+            self._grant_reward(char, hangout, room_name)
 
-            # Set next reward time
-            delay = random.randint(25, 45) * 60
-            next_times[pid] = now_ts + delay
+            # Reset timer for next cycle
+            timers[cid] = now + random.randint(REWARD_TIMER_MIN, REWARD_TIMER_MAX)
+            changed = True
 
-        self.db.next_reward_times = next_times
+        if changed:
+            self.db.next_reward_time = timers
 
-    def _give_reward(self, character, hangout_name):
-        from world.cyberpunk_sheets.services import CharacterMoneyService
-        from world.improvement_points import get_character_ip, add_ip_log_entry
+    def _grant_reward(self, char, hangout, room_name):
+        """
+        Award either EB or IP to a character. Randomly chooses one.
+        Updates the character's sheet and sends a notification message.
+        """
+        try:
+            give_eb = random.choice([True, False])
 
-        give_eb = random.choice([True, False])
+            if give_eb:
+                amount = random.randint(
+                    int(self.db.eb_min or 10),
+                    int(self.db.eb_max or 50)
+                )
+                current = char.db.eurodollars or 0
+                char.db.eurodollars = current + amount
+                char.msg(
+                    f"|y[ |wHANGOUT|y ] |n"
+                    f"You earn |w{amount}eb|n for roleplaying at "
+                    f"|c{room_name}|n."
+                )
+            else:
+                amount = round(
+                    random.uniform(
+                        float(self.db.ip_min or 0.5),
+                        float(self.db.ip_max or 2.0)
+                    ), 1
+                )
+                current = char.db.improvement_points or 0.0
+                char.db.improvement_points = round(current + amount, 1)
+                char.msg(
+                    f"|y[ |wHANGOUT|y ] |n"
+                    f"You earn |w{amount} IP|n for roleplaying at "
+                    f"|c{room_name}|n."
+                )
 
-        if give_eb:
-            amount = random.randint(self.db.eb_min, self.db.eb_max)
-            CharacterMoneyService.add_money(character, amount)
-            character.msg(f"|yYou do a little Biz for |w{amount}eb|y.|n")
-        else:
-            amount = round(random.uniform(self.db.ip_min, self.db.ip_max), 1)
-            current, spent, staff_awarded, _, _ = get_character_ip(character)
-            new_ip = current + amount
-            character.attributes.add("improvement_points", new_ip)
-            character.attributes.add("ip_staff_awarded", staff_awarded + amount)
-            add_ip_log_entry(
-                character, amount, "Hangout",
-                f"Hangout reward at {hangout_name}"
-            )
-            character.msg(
-                f"|yBeing out and about has some perks, you get |w{amount} IP|y.|n"
-            )
+        except Exception as e:
+            log_err(f"HangoutDailyScript: Error granting reward to {char}: {e}")
+
+    # ------------------------------------------------------------------
+    # Staff interface
+    # ------------------------------------------------------------------
 
     def force_new_hangout(self, hangout_id):
-        self._select_new_hangout(forced_id=hangout_id)
-        now = self._get_pst_now()
-        self.db.last_reset_date = now.strftime("%Y-%m-%d")
+        """
+        Staff override. Set the featured hangout by hangout_id.
+        Updates last_selection_date so daily auto-pick will not overwrite
+        this until tomorrow.
+
+        Args:
+            hangout_id (int): The hangout_id to set as featured.
+
+        Returns:
+            (True, hangout) on success, (False, error_string) on failure.
+        """
+        try:
+            from world.hangouts.models import HangoutDB
+            hangout = HangoutDB.get_by_hangout_id(hangout_id)
+            if not hangout:
+                return False, f"No hangout found with ID #{hangout_id}."
+            if not hangout.db.room:
+                return False, f"Hangout #{hangout_id} has no room set."
+
+            self.db.featured_hangout_id = hangout_id
+            self.db.last_selection_date = datetime.date.today().isoformat()
+            # Clear existing timers so the new room starts fresh
+            self.db.next_reward_time = {}
+
+            log_info(
+                f"HangoutDailyScript: Featured hangout manually set to "
+                f"#{hangout_id} - {hangout.db.room.key}"
+            )
+            return True, hangout
+        except Exception as e:
+            log_err(f"HangoutDailyScript: Error in force_new_hangout: {e}")
+            return False, str(e)
 
     def set_rewards(self, eb_min=None, eb_max=None, ip_min=None, ip_max=None):
+        """Update reward ranges. Called by +hoadmin/setrewards."""
         if eb_min is not None:
             self.db.eb_min = eb_min
         if eb_max is not None:
@@ -180,7 +274,46 @@ class HangoutDailyScript(DefaultScript):
             self.db.ip_max = ip_max
 
     def get_featured_hangout(self):
-        from world.hangouts.models import HangoutDB
+        """
+        Return the current featured HangoutDB object, or None.
+        """
         if not self.db.featured_hangout_id:
             return None
-        return HangoutDB.get_by_hangout_id(self.db.featured_hangout_id)
+        try:
+            from world.hangouts.models import HangoutDB
+            return HangoutDB.get_by_hangout_id(self.db.featured_hangout_id)
+        except Exception:
+            return None
+
+
+# ------------------------------------------------------------------
+# Initialization helpers
+# ------------------------------------------------------------------
+
+def get_or_create_hangout_script():
+    """
+    Get the existing hangout_daily_script or create it if it does not exist.
+    Safe to call multiple times.
+    """
+    try:
+        script = ScriptDB.objects.get(db_key="hangout_daily_script")
+        return script
+    except ScriptDB.DoesNotExist:
+        try:
+            script = create_script(HangoutFeaturedScript, key="hangout_daily_script")
+            return script
+        except Exception:
+            try:
+                return ScriptDB.objects.get(db_key="hangout_daily_script")
+            except ScriptDB.DoesNotExist:
+                return None
+    except ScriptDB.MultipleObjectsReturned:
+        scripts = ScriptDB.objects.filter(db_key="hangout_daily_script")
+        for s in scripts[1:]:
+            s.delete()
+        return scripts[0]
+
+
+def init_hangout_system():
+    """Initialize the hangout system at server start."""
+    get_or_create_hangout_script()
