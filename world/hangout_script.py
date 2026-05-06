@@ -139,18 +139,14 @@ class HangoutFeaturedScript(DefaultScript):
         Uses the same write methods as the staff money and IP award commands.
         """
         try:
-            from world.cyberpunk_sheets.services import CharacterSheetMoneyService
+            from world.cyberpunk_sheets.services import CharacterMoneyService
             from world.improvement_points import get_character_ip, add_ip_log_entry
 
             give_eb = random.choice([True, False])
 
             if give_eb:
                 amount = random.randint(int(self.db.eb_min or 10), int(self.db.eb_max or 50))
-                sheet = getattr(char, "character_sheet", None)
-                if not sheet:
-                    log_err(f"HangoutDailyScript: No character sheet for {char}.")
-                    return
-                CharacterSheetMoneyService.add_money(sheet, amount)
+                CharacterMoneyService.add_money(char, amount)
                 if char.sessions.all():
                     char.msg(f"|y[ |wHANGOUT|y ]|n You earn |w{amount}eb|n for doing biz at |c{room_name}|n.")
             else:

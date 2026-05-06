@@ -36,8 +36,11 @@ from .cyberware_admin_commands import CmdAddCyberware, CmdParentCyberware, CmdUn
 from .staff_commands import CmdRemoveCyberware, CmdUninstallCyberware, CmdSetLifepath, CmdReputation, CmdNotoriety, CmdConfig
 from .economy import CmdAdminMoney, CmdGiveMoney, CmdBalance, CmdLeaveRental
 from .rent_commands import CmdRent, CmdHome
+from .rent_award_command import CmdRentAward
 from world.cyberpunk_sheets.commerce import CmdBuy, CmdRefund, CmdListItems, CmdGive, CmdSellItem, CmdHaggle
 from .ip_commands import CmdIP
+from .humanity_commands import CmdHumanity
+from .humanity_commands import CmdHumanity
 from .vote_commands import CmdVote
 from .mission_commands import CmdMission
 from .bbs.bbs_all_commands import CmdBBS, CmdBBPost, CmdBBRead
@@ -226,6 +229,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdMeet())
         self.add(CmdNote())
         self.add(CmdIP())
+        self.add(CmdHumanity())
+        self.add(CmdRentAward())
         self.add(CmdVote())
         self.add(CmdBBS())
         self.add(CmdResetBBS())
@@ -282,6 +287,8 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         self.add(CmdReputation())
         self.add(CmdNotoriety())
         self.add(CmdConfig())
+        self.add(CmdHumanity())
+        self.add(CmdRentAward())
         self.add(CmdApprove())
         self.add(CmdUnapprove())
         self.add(CmdSetStoryteller())

@@ -515,7 +515,6 @@ class CharacterSheet(SharedMemoryModel):
 
         return active_skills
 
-    @property
     def __str__(self):
         return f"Character Sheet for {self.full_name or 'Unknown'}"
 
