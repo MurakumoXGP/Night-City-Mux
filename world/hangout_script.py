@@ -151,17 +151,16 @@ class HangoutFeaturedScript(DefaultScript):
                     log_err(f"HangoutDailyScript: No character sheet for {char}.")
                     return
                 CharacterSheetMoneyService.add_money(sheet, amount)
-                msg = f"|y[ |wHANGOUT|y ] |nYou earn |w{amount}eb|n for roleplaying at |c{room_name}|n."
+                if char.sessions.all():
+                    char.msg(f"|y[ |wHANGOUT|y ]|n You earn |w{amount}eb|n for doing biz at |c{room_name}|n.")
             else:
                 amount = round(random.uniform(float(self.db.ip_min or 0.5), float(self.db.ip_max or 2.0)), 1)
                 current, spent, staff_awarded, _, _ = get_character_ip(char)
                 new_total = round(current + amount, 1)
                 char.attributes.add("improvement_points", new_total)
                 add_ip_log_entry(char, amount, "Hangout Reward", f"Earned at {room_name}")
-                msg = f"|y[ |wHANGOUT|y ] |nYou earn |w{amount} IP|n for roleplaying at |c{room_name}|n."
-
-            for session in char.sessions.all():
-                session.msg(msg)
+                if char.sessions.all():
+                    char.msg(f"|y[ |wHANGOUT|y ]|n You earn |w{amount} IP|n when working your skills at |c{room_name}|n.")
 
         except Exception as e:
             log_err(f"HangoutDailyScript: Error granting reward to {char}: {e}")
