@@ -91,8 +91,8 @@ class HangoutFeaturedScript(DefaultScript):
 
         approved_chars = [
             obj for obj in room.contents
-            if obj.has_account
-            and not obj.tags.get("unapproved", category="approval")
+            if obj.sessions.count() > 0
+            and obj.tags.get("approved", category="approval")
         ]
 
         if len(approved_chars) < MIN_PLAYERS:
