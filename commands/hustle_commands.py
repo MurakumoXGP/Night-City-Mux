@@ -198,7 +198,7 @@ class CmdDebugHustle(Command):
             self.caller.msg("Usage: debughustle <character_name>")
             return
 
-        target = self.caller.search(self.args, global_search=True)
+        target = self.caller.search(self.args.strip(), global_search=True)
         if not target:
             return
 
