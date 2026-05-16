@@ -80,7 +80,7 @@ class HustleSystem(DefaultScript):
         self.desc = "Manages weekly hustle side jobs (Cyberpunk Red rules as written)"
         self.interval = 604800  # 1 week in seconds
         self.persistent = True
-        self.db.last_attempt = {}  # character_id -> gametime of last attempt
+        self.db.last_attempt = {}  # character_id -> time.time() Unix timestamp of last attempt
 
     def at_start(self):
         """Initialize last_attempt if missing."""
@@ -88,9 +88,13 @@ class HustleSystem(DefaultScript):
             self.db.last_attempt = {}
 
     def at_repeat(self):
-        """Friday midnight PST reset - clear attempt tracking so everyone can hustle again."""
+        """Weekly tick - at_repeat fires every 604800s from script creation.
+        can_attempt_hustle() already enforces the Friday midnight PST boundary via
+        datetime math, so this reset is a belt-and-suspenders safety clear.
+        It runs whenever the 7-day interval fires regardless of day.
+        """
         self.db.last_attempt = {}
-        logger.log_info("HustleSystem: Weekly reset (Friday midnight PST). Everyone can attempt a hustle.")
+        logger.log_info("HustleSystem: 7-day interval reset. Hustle attempts cleared.")
 
     def can_attempt_hustle(self, character):
         """
@@ -158,8 +162,10 @@ class HustleSystem(DefaultScript):
         if activity is None:
             return False, "An error occurred determining your hustle result.", 0, 0, 0
 
-        # Record attempt
-        self.db.last_attempt[character.id] = gametime.gametime(absolute=True)
+        # Record attempt - use time.time() (Unix epoch) so it compares correctly
+        # against the datetime.timestamp() values in can_attempt_hustle()
+        import time
+        self.db.last_attempt[character.id] = time.time()
 
         # Pay character (even if 0 - they still "did" the hustle)
         CharacterMoneyService.add_money(character, eb)
