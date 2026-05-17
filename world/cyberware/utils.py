@@ -1076,11 +1076,8 @@ def calculate_humanity_loss(sheet):
         humanity_base = sheet.humanity + old_total_hl + trauma_hl + uninstalled_hl
         new_humanity = max(0, min(natural_ceiling, humanity_base - total_hl))
 
-    # Update humanity and empathy (only reduce empathy when humanity is overwhelmed by cyberware)
+    # Update humanity. NOTE: empathy is a player stat and is never modified by humanity loss.
     sheet.humanity = new_humanity
-    if sheet.empathy * 10 <= total_hl:
-        sheet.empathy = max(1, new_humanity // 10)
-    
     sheet.total_cyberware_humanity_loss = total_cyberware_hl + uninstalled_hl
     sheet.save()
 

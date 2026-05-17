@@ -833,8 +833,11 @@ class Character(DefaultCharacter):
 
         # No cyberware or trauma HL: full pool is always Empathy x 10 (chargen, empathy raises, etc.).
         if total_humanity_loss + trauma_loss == 0:
+            # No HL at all: humanity should equal the ceiling.
+            # This handles fresh characters and empathy raises correctly.
+            # Only applies when there is genuinely zero HL -- not a recalc context.
             self.db.humanity = natural_ceiling
-            self.db.total_cyberware_humanity_loss = total_humanity_loss
+            self.db.total_cyberware_humanity_loss = 0
             return
 
         # Preserve staff-set humanity: current + old losses as base, then apply new losses.
@@ -842,9 +845,7 @@ class Character(DefaultCharacter):
         humanity_base = (getattr(self.db, "humanity", 0) or 0) + old_total_hl + trauma_loss
         self.db.humanity = max(0, min(natural_ceiling, humanity_base - total_humanity_loss - trauma_loss))
 
-        if self.db.empathy * 10 <= total_humanity_loss + trauma_loss:
-            self.db.empathy = max(1, self.db.humanity // 10)
-
+        # NOTE: empathy is a player stat and is never modified by humanity loss.
         self.db.total_cyberware_humanity_loss = total_humanity_loss
     
     def calculate_cyberware_humanity_loss(self):

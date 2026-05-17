@@ -581,10 +581,8 @@ class CharacterSheet(SharedMemoryModel):
         # Update humanity
         self.humanity = new_humanity
 
-        # Only update empathy if it's been reduced to 0
-        if self.empathy * 10 <= total_hl:
-            self.empathy = max(1, new_humanity // 10)
-
+        # NOTE: empathy is a player stat and is never modified by humanity loss.
+        # Effective empathy for skill checks is computed at display/roll time only.
         self.total_cyberware_humanity_loss = total_cyberware_hl + uninstalled_hl
         if not quiet:
             logger.info("About to recalculate derived stats")
@@ -815,15 +813,15 @@ class CharacterSheet(SharedMemoryModel):
             total_cyberware_hl = 0
         trauma_hl = getattr(self, "trauma_humanity_loss", 0) or 0
 
-        natural_ceiling = self.empathy * 10
-        total_hl_impact = total_cyberware_hl + trauma_hl
-        if total_hl_impact == 0:
+        # recalculate_derived_stats is NOT the authority on humanity values.
+        # calculate_humanity_loss() owns humanity recalculation.
+        # This block only enforces a hard ceiling safety cap to prevent
+        # out-of-range values from slipping through (e.g. empathy lowered by staff).
+        # It never recalculates from scratch -- that causes double-deduction when
+        # called after calculate_humanity_loss() has already set self.humanity correctly.
+        natural_ceiling = self.humanity_max_override if self.humanity_max_override is not None else (self.empathy * 10)
+        if self.humanity > natural_ceiling:
             self.humanity = natural_ceiling
-        else:
-            old_total_hl = getattr(self, "total_cyberware_humanity_loss", 0) or 0
-            humanity_base = self.humanity + old_total_hl + trauma_hl
-            self.humanity = max(0, min(natural_ceiling, humanity_base - total_cyberware_hl - trauma_hl))
-        self.total_cyberware_humanity_loss = total_cyberware_hl
 
         # Ensure _current_hp doesn't exceed _max_hp (allow negative for mortally wounded)
         if self._current_hp > self._max_hp:

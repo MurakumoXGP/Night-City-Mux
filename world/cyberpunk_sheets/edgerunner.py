@@ -801,10 +801,7 @@ class EdgerunnerChargen:
             humanity_base = (getattr(character.db, 'humanity', 0) or 0) + old_total_hl + trauma_loss
             character.db.humanity = max(0, min(natural_ceiling, humanity_base - total_humanity_loss - trauma_loss))
 
-        # Recalculate empathy if humanity reduction is significant
-        if character.db.empathy * 10 <= total_humanity_loss + trauma_loss:
-            character.db.empathy = max(1, character.db.humanity // 10)
-            
+        # NOTE: empathy is a player stat and is never modified by humanity loss.
         logger.info(f"Recalculated humanity for {character.name}: {character.db.humanity}")
         
         # Also update character sheet if it exists
