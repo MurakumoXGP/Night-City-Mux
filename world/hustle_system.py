@@ -88,13 +88,23 @@ class HustleSystem(DefaultScript):
             self.db.last_attempt = {}
 
     def at_repeat(self):
-        """Weekly tick - at_repeat fires every 604800s from script creation.
-        can_attempt_hustle() already enforces the Friday midnight PST boundary via
-        datetime math, so this reset is a belt-and-suspenders safety clear.
-        It runs whenever the 7-day interval fires regardless of day.
+        """Weekly tick - fires every 604800s from script creation date.
+        The interval drifts from Friday over time so we MUST check the actual
+        day before clearing. Clearing on the wrong day (e.g. Sunday) is what
+        allows players to hustle twice per week.
+        can_attempt_hustle() is the authoritative reset gate -- this only
+        clears the dict as a housekeeping measure when it fires on Friday.
         """
-        self.db.last_attempt = {}
-        logger.log_info("HustleSystem: 7-day interval reset. Hustle attempts cleared.")
+        import datetime
+        UTC_OFFSET = -8
+        now_pst = datetime.datetime.utcnow() + datetime.timedelta(hours=UTC_OFFSET)
+        if now_pst.weekday() == 4:  # Friday only
+            self.db.last_attempt = {}
+            logger.log_info("HustleSystem: Friday reset confirmed. Hustle attempts cleared.")
+        else:
+            logger.log_info(
+                f"HustleSystem: at_repeat fired on {now_pst.strftime('%A')} (not Friday). "                f"Skipping clear -- can_attempt_hustle() handles the reset window."
+            )
 
     def can_attempt_hustle(self, character):
         """
