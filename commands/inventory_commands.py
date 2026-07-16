@@ -47,7 +47,7 @@ class CmdInventory(MuxCommand):
       inv/reflavor <char>=<weapon>[/quality] - Staff: random flavor name on target's generic gun (default quality: standard)
 
     Switches:
-      inv/equip, inv/unequip, inv/wear, inv/remove, inv/attach - Modify your equipment
+      inv/equip, inv/unequip, inv/wear, inv/remove, inv/attach, inv/detach - Modify your equipment
       inv/reflavor - Staff only
     """
 
@@ -74,7 +74,7 @@ class CmdInventory(MuxCommand):
 
         # Skip staff-target lookup when an action switch is present -- self.args
         # contains item/weapon strings in those cases, not a character name.
-        ACTION_SWITCHES = ("equip", "unequip", "wear", "remove", "attach")
+        ACTION_SWITCHES = ("equip", "unequip", "wear", "remove", "attach", "detach")
         has_action_switch = bool(self.switches and any(s in self.switches for s in ACTION_SWITCHES))
         if not has_action_switch:
             target_char, character_sheet = get_staff_target_character(self.caller, self.args)
@@ -105,6 +105,9 @@ class CmdInventory(MuxCommand):
             return
         if self.switches and "attach" in self.switches:
             self.attach_weapon()
+            return
+        if self.switches and "detach" in self.switches:
+            self.detach_weapon()
             return
 
         self._show_inventory(character_sheet, self.caller)
@@ -640,6 +643,8 @@ class CmdInventory(MuxCommand):
 
         weapon = _find_weapon_for_equip(self.caller, inv, weapon_name)
         if not weapon:
+            # Give a clearer hint since players often reverse the argument order
+            self.caller.msg("Tip: syntax is inv/attach <weapon>=<attachment>, not the other way around.")
             return
 
         # Ensure core attachments exist
@@ -654,7 +659,12 @@ class CmdInventory(MuxCommand):
                 self.caller.msg(f"Did you mean: {', '.join(a.name for a in candidates)}?")
                 return
             else:
-                self.caller.msg(f"Attachment '{attachment_name}' not found. Use 'list equipment attachments' to see available.")
+                self.caller.msg(
+                    f"Attachment '{attachment_name}' not found in the attachment database. "
+                    f"Note: Rebuilds and other purchasable attachments must be in your inventory "
+                    f"but are looked up by name -- check spelling. "
+                    f"Use 'list equipment attachments' to see all available attachments."
+                )
                 return
 
         if not att.is_eligible_for_weapon(weapon):
@@ -693,6 +703,105 @@ class CmdInventory(MuxCommand):
             weapon.save()
 
         self.caller.msg(f"You attach {att.name} to {weapon.name}.")
+
+    def detach_weapon(self):
+        """inv/detach <weapon>=<attachment> - Remove an attachment from a weapon.
+        Returns the attachment to inventory as a gear item.
+        """
+        from world.weapon_constants import get_clip_size, DEFAULT_RANGED_ATTACHMENT_SLOTS
+        from world.inventory.models import Gear
+
+        if not self.args or "=" not in self.args:
+            self.caller.msg("Usage: inv/detach <weapon>=<attachment>")
+            return
+        weapon_name, attachment_name = self.args.split("=", 1)
+        weapon_name = weapon_name.strip()
+        attachment_name = attachment_name.strip()
+        if not weapon_name or not attachment_name:
+            self.caller.msg("Usage: inv/detach <weapon>=<attachment>")
+            return
+
+        if not hasattr(self.caller, 'character_sheet') or not self.caller.character_sheet:
+            self.caller.msg("You don't have a character sheet.")
+            return
+        sheet = self.caller.character_sheet
+        if not hasattr(sheet, 'inventory') or not sheet.inventory:
+            self.caller.msg("You don't have an inventory.")
+            return
+        inv = sheet.inventory
+
+        weapon = _find_weapon_for_equip(self.caller, inv, weapon_name)
+        if not weapon:
+            return
+
+        try:
+            iw = InventoryWeapon.objects.get(inventory=inv, weapon=weapon)
+        except InventoryWeapon.DoesNotExist:
+            self.caller.msg("Weapon not found in your inventory.")
+            return
+
+        installed = list(iw.installed_attachments.all())
+        if not installed:
+            self.caller.msg(f"{weapon.name} has no attachments installed.")
+            return
+
+        # Find the attachment by name
+        att = None
+        name_lower = attachment_name.lower()
+        exact = [a for a in installed if a.name.lower() == name_lower]
+        if exact:
+            att = exact[0]
+        else:
+            partial = [a for a in installed if name_lower in a.name.lower()]
+            if len(partial) == 1:
+                att = partial[0]
+            elif len(partial) > 1:
+                self.caller.msg(
+                    f"Multiple attachments match '{attachment_name}': "
+                    f"{', '.join(a.name for a in partial)}. Please be more specific."
+                )
+                return
+            else:
+                installed_names = ", ".join(a.name for a in installed)
+                self.caller.msg(
+                    f"'{attachment_name}' is not attached to {weapon.name}. "
+                    f"Installed: {installed_names}."
+                )
+                return
+
+        # Remove the attachment
+        iw.installed_attachments.remove(att)
+
+        # Reverse clip modifier if Extended/Drum Magazine
+        if att.clip_modifier in ("extended", "drum"):
+            wt = weapon.weapon_type or weapon.category or "medium pistol"
+            base_clip = get_clip_size(wt, "standard")
+            weapon.clip = base_clip
+            weapon.max_ammo = base_clip
+            # Don't let current_ammo exceed new clip size
+            if weapon.current_ammo > base_clip:
+                weapon.current_ammo = base_clip
+            weapon.save()
+
+        # Return attachment to inventory as gear
+        gear, _ = Gear.objects.get_or_create(
+            name=att.name,
+            defaults={
+                'category': 'Weapon Attachments',
+                'description': att.description or '',
+                'weight': 0.5,
+                'value': att.value or 0,
+            }
+        )
+        # Track via gear_quantity
+        char = self.caller
+        gear_counts = dict(getattr(char.db, 'gear_quantity', None) or {})
+        item_key = att.name.lower().strip()
+        gear_counts[item_key] = gear_counts.get(item_key, 0) + 1
+        char.db.gear_quantity = gear_counts
+        inv.add_gear(gear)
+
+        self.caller.msg(f"You remove {att.name} from {weapon.name}. It has been returned to your inventory.")
 
     def reflavor_weapon(self):
         """
@@ -1030,9 +1139,7 @@ class CmdEquip(Command):
             return
         
         try:
-            item = Weapon.objects.filter(name__iexact=item_name.strip('"').strip()).first()
-            if not item:
-                raise Weapon.DoesNotExist
+            item = Weapon.objects.get(name__iexact=item_name.strip('"'))
         except Weapon.DoesNotExist:
             self.caller.msg(f"Weapon '{item_name}' does not exist.")
             return
@@ -1059,9 +1166,7 @@ class CmdEquip(Command):
             return
 
         try:
-            weapon = Weapon.objects.filter(name__iexact=weapon_name.strip('"').strip()).first()
-            if not weapon:
-                raise Weapon.DoesNotExist
+            weapon = Weapon.objects.get(name__iexact=weapon_name.strip('"'))
         except Weapon.DoesNotExist:
             self.caller.msg(f"Weapon '{weapon_name}' does not exist.")
             return
@@ -1088,9 +1193,7 @@ class CmdEquip(Command):
             return
 
         try:
-            armor = Armor.objects.filter(name__iexact=armor_name.strip('"').strip()).first()
-            if not armor:
-                raise Armor.DoesNotExist
+            armor = Armor.objects.get(name__iexact=armor_name.strip('"'))
         except Armor.DoesNotExist:
             self.caller.msg(f"Armor '{armor_name}' does not exist.")
             return
@@ -1117,9 +1220,7 @@ class CmdEquip(Command):
             return
 
         try:
-            gear = Gear.objects.filter(name__iexact=gear_name.strip('"').strip()).first()
-            if not gear:
-                raise Gear.DoesNotExist
+            gear = Gear.objects.get(name__iexact=gear_name.strip('"'))
         except Gear.DoesNotExist:
             self.caller.msg(f"Gear '{gear_name}' does not exist.")
             return
