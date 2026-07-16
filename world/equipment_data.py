@@ -426,11 +426,51 @@ ammunition = [
         "weapon_type": "Generic",
         "damage_modifier": 0,
         "armor_piercing": 0,
-        "description": "Requires Targeting Scope Cyberware. +2 to Ranged Attack on Aimed/Single Shot. Without Targeting Scope, rounds will not fire. Ammo Types: Arrows, Bullets, Grenades, Rockets, and Shotgun Shells.",
-        "cost": 100,
+        "description": "CP:R p.345. Requires Targeting Scope Cyberware. Miss by 4 or less on Single Shot: retry at same DV (add 10 to d10, LUCK only). Without Targeting Scope will not fire. Ammo Types: Arrows, Bullets, Rockets.",
+        "cost": 500,
         "quantity": 10
     },
     {"name": "Stickball Sanctioned Rubber Ammunition", "ammo_type": "RUBBER", "weapon_type": "Generic", "damage_modifier": 0, "armor_piercing": 0, "description": "Interface RED Vol 4: Stickball. Tech Upgraded Rubber Ammunition. Arrows, Bullets, and Slugs. Cannot cause Critical Injuries. If damage would reduce target to under 1 HP, they are instead Unconscious at 1 HP. 10 rounds per pack. Cost 10eb (Cheap).", "cost": 10, "quantity": 10},
+    {
+        "name": "Improved Smart Ammo",
+        "ammo_type": "SMART",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "CEMK p.31. Smart Weapons only (not Smartgun Link). Miss by 5 or less: retry at 14+1d10 (LUCK only). Ignore darkness/smoke/fog penalties. 50eb/10 Arrows/Bullets/Slugs/Shells; 500eb/1 Grenade or Rocket.",
+        "cost": 50,
+        "quantity": 10
+    },
+    {
+        "name": "Sleep Ammo",
+        "ammo_type": "SLEEP",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "CP:R p.346. No damage. Target beats DV13 Resist Torture/Drugs or Prone and Unconscious for 1 minute. Ammo Types: Arrows and Grenades.",
+        "cost": 500,
+        "quantity": 10
+    },
+    {
+        "name": "Smoke Ammo",
+        "ammo_type": "SMOKE",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "CP:R p.347. Obscures 10mx10m with smoke for 1 minute. -4 penalty for tasks in smoke. Ammo Types: Grenades only.",
+        "cost": 50,
+        "quantity": 10
+    },
+    {
+        "name": "Teargas Ammo",
+        "ammo_type": "TEARGAS",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "CP:R p.347. No damage. Meat-eyed targets beat DV13 Resist Torture/Drugs or Damaged Eye Critical Injury for 1 minute. Ammo Types: Grenades only.",
+        "cost": 50,
+        "quantity": 10
+    },
 ]
 
 weapons = [
