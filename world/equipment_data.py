@@ -3809,20 +3809,6 @@ gears = [
         "weight": 0.5,
         "value": 1000
     },
-    {
-        "name": "Improved Smart Ammunition (10)",
-        "category": "Ammunition",
-        "description": "Smart Weapons only (not Smartgun Link). 50eb for 10 Arrows, Bullets, Slugs, or Shells. Ignore penalties from darkness, smoke, fog, visual obscurement. Miss by 5 or less: immediate retry, add 14+1d10 (can add LUCK) vs original DV; penalties carry over. Ammo types: Arrows, Bullets, Slugs, Shotgun Shells.",
-        "weight": 0.5,
-        "value": 50
-    },
-    {
-        "name": "Improved Smart Grenade/Rocket",
-        "category": "Ammunition",
-        "description": "Smart Weapons only (not Smartgun Link). 500eb for 1 Grenade or Rocket. Ignore darkness/smoke/fog penalties. Miss by 5 or less: retry with 14+1d10 vs same DV. Same benefits as Improved Smart Ammo.",
-        "weight": 0.5,
-        "value": 500
-    },
     # Interface RED Vol 2: Night City Weather gear
     {
         "name": "Cold-Weather Jacket Lining",
@@ -3967,20 +3953,6 @@ gears = [
         "name": "Piranha Smash",
         "category": "Drugs",
         "description": "Smash upgraded by Tech. Lime-flavored. Primary (4 hrs): +2 Acting, Contortionist, Conversation, Dance, Human Perception, Persuasion. Secondary (DV9): Addicted; -2 to those Skills. Piranhas only.",
-        "weight": 0.5,
-        "value": 10
-    },
-    {
-        "name": "Bullet to Slug Adapter Casings",
-        "category": "Ammunition",
-        "description": "Box of 10. Convert bullet ammo to shotgun slugs for weapons that fire slugs. Action with jig to load 10 bullets into casings. Reusable.",
-        "weight": 0.5,
-        "value": 100
-    },
-    {
-        "name": "Small Game Ammunition",
-        "category": "Ammunition",
-        "description": "100 rounds. -2d6 damage (min 1d6) in Single Shot. Autofire -1 (min Autofire 3). Bullets only. Good for hunting.",
         "weight": 0.5,
         "value": 10
     },
