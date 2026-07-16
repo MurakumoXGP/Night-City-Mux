@@ -986,6 +986,12 @@ class CmdBuy(MuxCommand):
         if not stash and not allows_multiples(cyberware) and inventory.cyberware.filter(cyberware=cyberware, installed=True).exists():
             self.caller.msg(f"You already have {cyberware.name} installed.")
             return
+        # Cap stackable cyberware at 3 instances
+        if not stash and allows_multiples(cyberware):
+            existing_count = inventory.cyberware.filter(cyberware=cyberware).count()
+            if existing_count >= 3:
+                self.caller.msg(f"|rYou already have {existing_count} copies of {cyberware.name}. Maximum is 3.|n")
+                return
 
         if not stash:
             requirements_met, error_message = check_cyberware_requirements(character_sheet, cyberware)
@@ -1443,6 +1449,9 @@ class CmdBuy(MuxCommand):
         inventory, _ = Inventory.get_or_create_for_character(character)
         
         if merchant_type == "arms_dealer":
+            if inventory.weapons.filter(name__iexact=item['name']).count() >= 3:
+                self.caller.msg(f"|rYou already have 3 copies of {item['name']}. Maximum is 3.|n")
+                return
             from world.weapon_constants import DEFAULT_RANGED_ATTACHMENT_SLOTS
             clip = item.get('clip', 0)
             slots = item.get('attachment_slots')
@@ -1470,6 +1479,9 @@ class CmdBuy(MuxCommand):
             )
             inventory.weapons.add(weapon)
         elif merchant_type == "clothier":
+            if inventory.armor.filter(name__iexact=item['name']).count() >= 3:
+                self.caller.msg(f"|rYou already have 3 copies of {item['name']}. Maximum is 3.|n")
+                return
             armor, created = Armor.objects.get_or_create(
                 name=item['name'],
                 defaults={
@@ -1482,15 +1494,26 @@ class CmdBuy(MuxCommand):
             )
             inventory.armor.add(armor)
         elif merchant_type == "gear_merchant":
-            gear, created = Gear.objects.get_or_create(
+            # Gear uses shared catalog rows. Quantity tracked via db.gear_quantity
+            # attribute dict to avoid creating duplicate DB rows.
+            gear, _ = Gear.objects.get_or_create(
                 name=item['name'],
                 defaults={
                     'category': item['category'],
                     'description': item.get('description', ''),
                     'weight': item['weight'],
-                    'value': item['value']
+                    'value': item['value'],
                 }
             )
+            char = self.caller
+            gear_counts = dict(getattr(char.db, 'gear_quantity', None) or {})
+            item_key = item['name'].lower().strip()
+            current_qty = gear_counts.get(item_key, 0)
+            if current_qty >= 3:
+                self.caller.msg(f"|rYou already have {current_qty} copies of {item['name']}. Maximum is 3.|n")
+                return
+            gear_counts[item_key] = current_qty + 1
+            char.db.gear_quantity = gear_counts
             inventory.add_gear(gear)
         elif merchant_type == "vehicle_dealer":
             vehicle_model, _ = VehicleModel.objects.get_or_create(

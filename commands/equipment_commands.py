@@ -146,7 +146,9 @@ class CmdAddItem(Command):
 
         # Try weapon, armor, gear, vehicle in order
         try:
-            weapon = Weapon.objects.get(name__iexact=item_name)
+            weapon = Weapon.objects.filter(name__iexact=item_name).first()
+            if not weapon:
+                raise Weapon.DoesNotExist
             inventory.weapons.add(weapon)
             self.caller.msg(f"Added {weapon.name} to {player.name}'s inventory.")
             player.msg(f"A {weapon.name} has been added to your inventory.")
@@ -155,7 +157,9 @@ class CmdAddItem(Command):
             pass
 
         try:
-            armor = Armor.objects.get(name__iexact=item_name)
+            armor = Armor.objects.filter(name__iexact=item_name).first()
+            if not armor:
+                raise Armor.DoesNotExist
             inventory.armor.add(armor)
             self.caller.msg(f"Added {armor.name} to {player.name}'s inventory.")
             player.msg(f"A {armor.name} has been added to your inventory.")
@@ -164,7 +168,9 @@ class CmdAddItem(Command):
             pass
 
         try:
-            gear = Gear.objects.get(name__iexact=item_name)
+            gear = Gear.objects.filter(name__iexact=item_name).first()
+            if not gear:
+                raise Gear.DoesNotExist
             inventory.add_gear(gear)
             self.caller.msg(f"Added {gear.name} to {player.name}'s inventory.")
             player.msg(f"A {gear.name} has been added to your inventory.")

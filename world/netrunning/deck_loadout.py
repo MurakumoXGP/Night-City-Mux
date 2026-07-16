@@ -400,8 +400,8 @@ def install_deck_program(
     hw_list = list(ent["hardware"])
     pr_list = list(ent["programs"])
 
-    if prog_name in pr_list:
-        return False, f"{prog_name} is already loaded on {deck_key}."
+    # Duplicate programs are allowed -- each copy occupies a slot and requires
+    # a physical inventory item. The slot check and inventory consumption enforce limits.
 
     cost = program_slot_cost(prog_name)
     used = count_hardware_slots_used(hw_list) + count_program_slots_used(pr_list)
@@ -417,7 +417,17 @@ def install_deck_program(
         or black_ice_data_by_name(inv_gear.name)
     )
     if inv_gear and cat_ok:
-        inv.remove_gear(inv_gear)
+        # Use gear_quantity to track copies. Decrement count; only remove M2M link
+        # when last copy is consumed. Allows multiple copies of the same program.
+        gear_counts = dict(getattr(character.db, 'gear_quantity', None) or {})
+        item_key = prog_name.lower().strip()
+        qty = gear_counts.get(item_key, 1)  # default 1 for legacy items without counter
+        if qty <= 1:
+            inv.remove_gear(inv_gear)
+            gear_counts.pop(item_key, None)
+        else:
+            gear_counts[item_key] = qty - 1
+        character.db.gear_quantity = gear_counts
     elif not consume_program_from_vouchers(character, prog_name):
         return False, (
             f"You need '{prog_name}' in your inventory (Program / Black ICE gear) or on a crafted program voucher."
@@ -530,7 +540,12 @@ def remove_deck_program(
 
     gear = ensure_program_gear(prog_name)
     if gear:
-        inv.add_gear(gear)
+        # Increment gear_quantity; re-add M2M link if it was fully removed
+        gear_counts = dict(getattr(character.db, 'gear_quantity', None) or {})
+        item_key = prog_name.lower().strip()
+        gear_counts[item_key] = gear_counts.get(item_key, 0) + 1
+        character.db.gear_quantity = gear_counts
+        inv.add_gear(gear)  # idempotent if link already exists
 
     return True, f"Unloaded |w{prog_name}|n from |c{deck_key}|n; returned to inventory."
 

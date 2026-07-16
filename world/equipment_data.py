@@ -307,7 +307,7 @@ ammunition = [
     },
     {
         "name": "Flamethrower Ammo",
-        "ammo_type": "FLAMETHROWER",
+        "ammo_type": "INCENDIARY",  # Flamethrowers fire Incendiary Shotgun Shells
         "weapon_type": "Heavy Weapons",
         "damage_modifier": 0,
         "armor_piercing": 0,
@@ -339,6 +339,99 @@ ammunition = [
     {"name": "Arrowhypo Ammunition", "ammo_type": "ARROWHYPO", "weapon_type": "Archery", "damage_modifier": 0, "armor_piercing": 0, "description": "Reinforced airhypo on arrow. Load 1 dose Street Drug. Hit = inject drug, no damage. Recoverable like Basic Arrow. 1 unit.", "cost": 100},
     {"name": "Airburst Ammunition", "ammo_type": "AIRBURST", "weapon_type": "Heavy Weapons", "damage_modifier": 0, "armor_piercing": 0, "description": "Gas-dispersal munition for Grenades/Rockets. Load 3 doses of single Street Drug. Hit = gas dose. Nasal filters/gas masks prevent. 1 unit.", "cost": 125},
     # Interface RED Vol 4: Stickball
+    # -----------------------------------------------------------------------
+    # CP:R Core Book Non-Basic Ammunition (p.340-341)
+    # -----------------------------------------------------------------------
+    {
+        "name": "Armor Piercing Ammo",
+        "ammo_type": "ARMOR_PIERCING",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 2,
+        "description": "Ablates armor by 2 instead of 1. Ammo Types: All except Shotgun Shells.",
+        "cost": 100,
+        "quantity": 10
+    },
+    {
+        "name": "Biotoxin Ammo",
+        "ammo_type": "BIOTOXIN",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Target must succeed DV15 Resist Torture/Drugs or become Severely Wounded. Does not stack. Ammo Types: Arrows and Bullets.",
+        "cost": 500,
+        "quantity": 10
+    },
+    {
+        "name": "EMP Ammo",
+        "ammo_type": "EMP",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Does not damage humans. Vs machines: +2d6 damage directly to HP, ignoring SP. Ammo Types: All except Shotgun Shells.",
+        "cost": 500,
+        "quantity": 10
+    },
+    {
+        "name": "Expansive Ammo",
+        "ammo_type": "EXPANSIVE",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "When dealing damage through armor, Critical Injury threshold is lowered by 1 (max 2 per target per Turn). Ammo Types: Arrows, Bullets, and Shotgun Shells.",
+        "cost": 100,
+        "quantity": 10
+    },
+    {
+        "name": "Flashbang Ammo",
+        "ammo_type": "FLASHBANG",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Does not deal damage. Target is Blinded and Deafened until end of next Turn. Ammo Types: Grenades.",
+        "cost": 100,
+        "quantity": 10
+    },
+    {
+        "name": "Incendiary Ammo",
+        "ammo_type": "INCENDIARY",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Target is set On Fire when hit (2d6 damage per Turn until extinguished). Ammo Types: Arrows, Bullets, Grenades, and Shotgun Shells.",
+        "cost": 100,
+        "quantity": 10
+    },
+    {
+        "name": "Poison Ammo",
+        "ammo_type": "POISON",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Target must succeed DV13 Resist Torture/Drugs or lose 2 from REF, DEX, and MOVE for 1 hour. Ammo Types: Arrows and Bullets.",
+        "cost": 100,
+        "quantity": 10
+    },
+    {
+        "name": "Rubber Ammo",
+        "ammo_type": "RUBBER",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Non-lethal. Target reduced to 0 HP is Mortally Wounded but cannot die from this damage. Ammo Types: Bullets and Shotgun Shells.",
+        "cost": 10,
+        "quantity": 10
+    },
+    {
+        "name": "Smart Ammo",
+        "ammo_type": "SMART",
+        "weapon_type": "Generic",
+        "damage_modifier": 0,
+        "armor_piercing": 0,
+        "description": "Requires Targeting Scope Cyberware. +2 to Ranged Attack on Aimed/Single Shot. Without Targeting Scope, rounds will not fire. Ammo Types: Arrows, Bullets, Grenades, Rockets, and Shotgun Shells.",
+        "cost": 100,
+        "quantity": 10
+    },
     {"name": "Stickball Sanctioned Rubber Ammunition", "ammo_type": "RUBBER", "weapon_type": "Generic", "damage_modifier": 0, "armor_piercing": 0, "description": "Interface RED Vol 4: Stickball. Tech Upgraded Rubber Ammunition. Arrows, Bullets, and Slugs. Cannot cause Critical Injuries. If damage would reduce target to under 1 HP, they are instead Unconscious at 1 HP. 10 rounds per pack. Cost 10eb (Cheap).", "cost": 10, "quantity": 10},
 ]
 
@@ -2246,6 +2339,135 @@ weapon_attachments = [
         "install_skill": "Weaponstech",
         "effect_description": "Weapon can be used as Stun Baton.",
     },
+    # -----------------------------------------------------------------------
+    # CP:R Core Book Attachments (p.347-349)
+    # -----------------------------------------------------------------------
+    {
+        "name": "Bayonet",
+        "value": 100,
+        "description": "Blade attached to the barrel. When wielded, the weapon can also be used as a Medium Melee Weapon (2d6 damage). Eligible: All Non-Exotic Ranged Weapons fired with the Shoulder Arms Skill. Requires 1 slot.",
+        "eligible_categories": ["shoulder_arms"],
+        "requires_slot": True,
+        "slot_type": "underbarrel",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Weapon can be used as a Medium Melee Weapon (2d6).",
+    },
+    {
+        "name": "Drum Magazine",
+        "value": 500,
+        "description": "High-capacity rotary magazine. Doubles the weapon's standard clip size. Cannot be concealed under clothing. Eligible: All Non-Exotic Ranged Weapons except Bows and Crossbows. Requires 1 slot.",
+        "eligible_categories": ["handgun", "shoulder_arms", "heavy_weapons"],
+        "requires_slot": True,
+        "slot_type": "magazine",
+        "clip_modifier": "drum",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Doubles clip size. Weapon cannot be concealed.",
+    },
+    {
+        "name": "Extended Magazine",
+        "value": 100,
+        "description": "Larger magazine extending below the grip. Increases clip size by half (round up). Weapon cannot be concealed under clothing. Eligible: All Non-Exotic Ranged Weapons except Bows and Crossbows. Requires 1 slot.",
+        "eligible_categories": ["handgun", "shoulder_arms", "heavy_weapons"],
+        "requires_slot": True,
+        "slot_type": "magazine",
+        "clip_modifier": "extended",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Increases clip size by half (round up). Weapon cannot be concealed.",
+    },
+    {
+        "name": "Grenade Launcher Underbarrel",
+        "value": 500,
+        "description": "Single-shot underbarrel grenade launcher (ROF 1, 6d6, range as Grenade). Eligible: All Non-Exotic Ranged Weapons fired with the Shoulder Arms Skill. Requires 2 slots.",
+        "eligible_categories": ["shoulder_arms"],
+        "requires_slot": True,
+        "slot_type": "underbarrel",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Single-shot underbarrel grenade launcher. ROF 1, 6d6.",
+    },
+    {
+        "name": "Infrared Nightvision Scope",
+        "value": 500,
+        "description": "Thermal imaging scope. Reduces penalties from darkness, smoke, fog, etc. to 0. Can distinguish hot organic targets from cold metal but not fine detail. Eligible: All Non-Exotic Ranged Weapons. Requires 1 slot.",
+        "eligible_categories": ["handgun", "shoulder_arms", "heavy_weapons", "archery"],
+        "requires_slot": True,
+        "slot_type": "scope",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Reduces darkness/smoke/fog penalties to 0. Distinguishes warm from cold.",
+    },
+    {
+        "name": "Shotgun Underbarrel",
+        "value": 500,
+        "description": "Single-shot underbarrel shotgun (ROF 1, 5d6, Shotgun Shell ammo). Eligible: All Non-Exotic Ranged Weapons fired with the Shoulder Arms Skill. Requires 2 slots.",
+        "eligible_categories": ["shoulder_arms"],
+        "requires_slot": True,
+        "slot_type": "underbarrel",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Single-shot underbarrel shotgun. ROF 1, 5d6, Shotgun Shell ammo.",
+    },
+    {
+        "name": "Smartgun Link",
+        "value": 500,
+        "description": "Electronic targeting link between weapon and user. Makes the weapon a Smartgun -- requires Interface Plugs or Subdermal Grip. When connected: +1 to Ranged Attack Checks. Requires 2 slots. Eligible: All Non-Exotic Ranged Weapons. Install/uninstall takes 1 hour.",
+        "eligible_categories": ["handgun", "shoulder_arms", "heavy_weapons", "archery"],
+        "requires_slot": True,
+        "slot_type": "link",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "+1 to Ranged Attack Checks when connected via Interface Plugs or Subdermal Grip.",
+    },
+    {
+        "name": "Sniping Scope",
+        "value": 100,
+        "description": "Long-range precision scope. User can see detail up to 800m away. When attacking a target 51m or further with single shot or aimed shot, +1 to Attack Check. Does not stack with Targeting Scope Cyberware. Eligible: All Non-Exotic Ranged Weapons. Requires 1 slot.",
+        "eligible_categories": ["handgun", "shoulder_arms", "heavy_weapons", "archery"],
+        "requires_slot": True,
+        "slot_type": "scope",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "+1 to Ranged Attack at 51m+. See detail to 800m. Requires 1 slot.",
+    },
+    # -----------------------------------------------------------------------
+    # Interface RED Vol 5 / Solo of Fortune 2045 Attachments (p.47-48)
+    # -----------------------------------------------------------------------
+    {
+        "name": "Silencer",
+        "value": 100,
+        "description": "Uses sound baffling and noise-cancellation to make a firearm whisper-quiet. Detecting a shot requires a Perception Check (DV set by GM based on weapon size, distance, ambient noise). Does not prevent detection of bullet impacts. Eligible: All Non-Exotic Non-Explosive Ranged Weapons, excluding Bows and Crossbows. Requires 1 slot.",
+        "eligible_categories": ["handgun", "shoulder_arms", "heavy_weapons"],
+        "requires_slot": True,
+        "slot_type": "barrel",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Suppresses muzzle report. Detecting shot requires Perception Check (GM sets DV).",
+    },
+    {
+        "name": "Airhypo Bayonet",
+        "value": 100,
+        "description": "Compressed-air drug delivery system mounted on the barrel. On a successful Melee Weapon Attack, injects one dose of a loaded substance instead of dealing damage. If the Attack Check fails, the dose is not lost. Reservoir holds 1 dose. Reloading requires an Action. Eligible: All Non-Exotic Ranged Weapons fired with the Shoulder Arms Skill. Requires 1 slot.",
+        "eligible_categories": ["shoulder_arms"],
+        "requires_slot": True,
+        "slot_type": "underbarrel",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Injects 1 dose of a substance on hit instead of dealing damage.",
+    },
+    {
+        "name": "Grapple Gun Underbarrel",
+        "value": 100,
+        "description": "Undermounted grapple gun. The weapon can be used as a Grapple Gun (CP:R p.353) but cannot make Attack Checks while being used as a grapple gun. Eligible: Non-Exotic Crossbows and all Non-Exotic Ranged Weapons fired with the Shoulder Arms Skill. Requires 1 slot.",
+        "eligible_categories": ["shoulder_arms", "archery"],
+        "requires_slot": True,
+        "slot_type": "underbarrel",
+        "install_dv": 17,
+        "install_skill": "Weaponstech",
+        "effect_description": "Weapon doubles as a Grapple Gun (CP:R p.353). Cannot attack while grappling.",
+    },
 ]
 
     # Armor
@@ -3460,6 +3682,85 @@ gears = [
         "description": "Rebuild. 2 slots. Transforms to Power Weapon. +5 Bonus Damage on Critical Injury. Ricochet: hit targets behind cover or out of sight; -4 to Attack (Aimed Shot ignores -4, uses Aimed Shot penalty only). Range measured user-to-target. Shotgun Shell: choose surface within 6m as new origin for 6m spread in new direction. Eligible: All Non-Exotic Ranged Weapons. 1hr install/uninstall.",
         "weight": 0.5,
         "value": 1000
+    },
+    # CP:R Core Book Attachments (p.347-349)
+    {
+        "name": "Bayonet",
+        "category": "Weapon Attachments",
+        "description": "Blade mounted on the barrel. Weapon can also be used as a Medium Melee Weapon (2d6). Eligible: All Non-Exotic Ranged Weapons fired with Shoulder Arms Skill. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 100
+    },
+    {
+        "name": "Drum Magazine",
+        "category": "Weapon Attachments",
+        "description": "Rotary magazine. Doubles clip size. Weapon cannot be concealed. Eligible: All Non-Exotic Ranged Weapons except Bows and Crossbows. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 500
+    },
+    {
+        "name": "Extended Magazine",
+        "category": "Weapon Attachments",
+        "description": "Larger magazine. Increases clip size by half (round up). Weapon cannot be concealed. Eligible: All Non-Exotic Ranged Weapons except Bows and Crossbows. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 100
+    },
+    {
+        "name": "Grenade Launcher Underbarrel",
+        "category": "Weapon Attachments",
+        "description": "Single-shot underbarrel grenade launcher. ROF 1, 6d6. Eligible: All Non-Exotic Ranged Weapons fired with Shoulder Arms Skill. Requires 2 slots.",
+        "weight": 1.0,
+        "value": 500
+    },
+    {
+        "name": "Infrared Nightvision Scope",
+        "category": "Weapon Attachments",
+        "description": "Thermal imaging scope. Reduces darkness/smoke/fog penalties to 0. Eligible: All Non-Exotic Ranged Weapons. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 500
+    },
+    {
+        "name": "Shotgun Underbarrel",
+        "category": "Weapon Attachments",
+        "description": "Single-shot underbarrel shotgun. ROF 1, 5d6, Shotgun Shell ammo. Eligible: All Non-Exotic Ranged Weapons fired with Shoulder Arms Skill. Requires 2 slots.",
+        "weight": 1.0,
+        "value": 500
+    },
+    {
+        "name": "Smartgun Link",
+        "category": "Weapon Attachments",
+        "description": "Electronic targeting link. Makes weapon a Smartgun. Requires Interface Plugs or Subdermal Grip. +1 to Ranged Attack when connected. Eligible: All Non-Exotic Ranged Weapons. Requires 2 slots. Install takes 1 hour.",
+        "weight": 0.5,
+        "value": 500
+    },
+    {
+        "name": "Sniping Scope",
+        "category": "Weapon Attachments",
+        "description": "Long-range scope. +1 to Ranged Attack at 51m+. See detail to 800m. Does not stack with Targeting Scope Cyberware. Eligible: All Non-Exotic Ranged Weapons. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 100
+    },
+    # Interface RED Vol 5 / Solo of Fortune 2045 Attachments (p.47-48)
+    {
+        "name": "Silencer",
+        "category": "Weapon Attachments",
+        "description": "Sound-suppressing barrel attachment. Detecting shot requires Perception Check (GM sets DV). Eligible: All Non-Exotic Non-Explosive Ranged Weapons, excluding Bows and Crossbows. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 100
+    },
+    {
+        "name": "Airhypo Bayonet",
+        "category": "Weapon Attachments",
+        "description": "Compressed-air drug injector. On hit: injects 1 dose of loaded substance instead of dealing damage. Reservoir holds 1 dose, reloading is an Action. Eligible: All Non-Exotic Ranged Weapons fired with Shoulder Arms Skill. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 100
+    },
+    {
+        "name": "Grapple Gun Underbarrel",
+        "category": "Weapon Attachments",
+        "description": "Undermounted grapple gun. Weapon doubles as a Grapple Gun (CP:R p.353) but cannot make Attack Checks while grappling. Eligible: Non-Exotic Crossbows and Shoulder Arms Weapons. Requires 1 slot.",
+        "weight": 0.5,
+        "value": 100
     },
     {
         "name": "Smart Rebuild",

@@ -112,7 +112,7 @@ class CmdHumanity(MuxCommand):
         output = header(f"Humanity - {character.key}", width=60, fillchar="|m=|n")
         output += f"\n|yEmpathy:|n         {empathy}\n"
         override = getattr(sheet, "humanity_max_override", None)
-        max_label = f"{maximum} |r(staff override)|n" if override is not None else f"{maximum} (Empathy {getattr(sheet, 'empathy', 1) or 1} x 10)"
+        max_label = f"{maximum}"
         output += f"|yHumanity Maximum:|n {max_label}\n"
         output += f"|yHumanity Current:|n {current}/{maximum}\n"
 
@@ -231,10 +231,8 @@ class CmdHumanity(MuxCommand):
         else:
             sheet.save(skip_recalculation=True)
 
-        direction = "below" if value < natural else "above"
         self.caller.msg(
-            f"Set {character.key}'s humanity maximum to |w{value}|n "
-            f"(natural would be {natural} -- override is {direction} natural). "
+            f"Set {character.key}'s humanity maximum to |w{value}|n. "
             f"Current humanity: {min(current, value)}/{value}."
         )
         if character.sessions.all():

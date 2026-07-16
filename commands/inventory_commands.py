@@ -72,18 +72,18 @@ class CmdInventory(MuxCommand):
             self.reflavor_weapon()
             return
 
-        # Staff can view another character: inv <name>
-        target_char, character_sheet = get_staff_target_character(self.caller, self.args)
-        if target_char is not None and character_sheet is not None:
-            # Staff viewing another - only allow view, not equip/wear/etc
-            if self.switches and any(s in self.switches for s in ("equip", "unequip", "wear", "remove", "attach")):
-                self.caller.msg("You can only view another character's inventory, not modify it.")
+        # Skip staff-target lookup when an action switch is present -- self.args
+        # contains item/weapon strings in those cases, not a character name.
+        ACTION_SWITCHES = ("equip", "unequip", "wear", "remove", "attach")
+        has_action_switch = bool(self.switches and any(s in self.switches for s in ACTION_SWITCHES))
+        if not has_action_switch:
+            target_char, character_sheet = get_staff_target_character(self.caller, self.args)
+            if target_char is not None and character_sheet is not None:
+                self._show_inventory(character_sheet, target_char)
                 return
-            self._show_inventory(character_sheet, target_char)
-            return
-        if self.args and (target_char is None or character_sheet is None):
-            self.caller.msg("You don't have permission to view other character inventories, or no such character found.")
-            return
+            if self.args and (target_char is None or character_sheet is None):
+                self.caller.msg("You don't have permission to view other character inventories, or no such character found.")
+                return
 
         character_sheet = get_character_sheet(self.caller)
         if not character_sheet:
@@ -1030,7 +1030,9 @@ class CmdEquip(Command):
             return
         
         try:
-            item = Weapon.objects.get(name__iexact=item_name.strip('"'))
+            item = Weapon.objects.filter(name__iexact=item_name.strip('"').strip()).first()
+            if not item:
+                raise Weapon.DoesNotExist
         except Weapon.DoesNotExist:
             self.caller.msg(f"Weapon '{item_name}' does not exist.")
             return
@@ -1057,7 +1059,9 @@ class CmdEquip(Command):
             return
 
         try:
-            weapon = Weapon.objects.get(name__iexact=weapon_name.strip('"'))
+            weapon = Weapon.objects.filter(name__iexact=weapon_name.strip('"').strip()).first()
+            if not weapon:
+                raise Weapon.DoesNotExist
         except Weapon.DoesNotExist:
             self.caller.msg(f"Weapon '{weapon_name}' does not exist.")
             return
@@ -1084,7 +1088,9 @@ class CmdEquip(Command):
             return
 
         try:
-            armor = Armor.objects.get(name__iexact=armor_name.strip('"'))
+            armor = Armor.objects.filter(name__iexact=armor_name.strip('"').strip()).first()
+            if not armor:
+                raise Armor.DoesNotExist
         except Armor.DoesNotExist:
             self.caller.msg(f"Armor '{armor_name}' does not exist.")
             return
@@ -1111,7 +1117,9 @@ class CmdEquip(Command):
             return
 
         try:
-            gear = Gear.objects.get(name__iexact=gear_name.strip('"'))
+            gear = Gear.objects.filter(name__iexact=gear_name.strip('"').strip()).first()
+            if not gear:
+                raise Gear.DoesNotExist
         except Gear.DoesNotExist:
             self.caller.msg(f"Gear '{gear_name}' does not exist.")
             return

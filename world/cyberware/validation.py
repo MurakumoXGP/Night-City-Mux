@@ -223,6 +223,7 @@ MULTIPLE_ALLOWED = frozenset({
     "budget chipware socket",
     "interface plugs",
     "self-ice",
+    "ex-disk",                       # Can be purchased up to 3x (InRed5)
     "grafted muscle and bone lace",
     # One per cyberlimb; slot/validation limits apply (max 4 limbs, 1 per limb).
     "extra-jointed cyberlimb upgrade",
@@ -319,6 +320,31 @@ def allows_multiples(cyberware):
     if cw_type == FASHIONWARE_TYPE:
         return True
     return False
+
+
+def check_duplicate_purchase(character_sheet, cyberware):
+    """Gate called before purchasing cyberware. Blocks re-purchasing non-stackable
+    items and caps stackable items at 3 instances.
+    Returns (allowed: bool, error_message: str or None).
+    """
+    name = _norm(getattr(cyberware, "name", ""))
+    existing = CyberwareInstance.objects.filter(
+        character_sheet=character_sheet,
+        cyberware=cyberware,
+    ).count()
+    if existing == 0:
+        return True, None
+    if not can_purchase_multiple(cyberware):
+        return False, (
+            f"You already have {cyberware.name} installed. "
+            f"This item cannot be purchased more than once."
+        )
+    if existing >= 3:
+        return False, (
+            f"You already have {existing} copies of {cyberware.name} installed. "
+            f"Maximum is 3."
+        )
+    return True, None
 
 
 def select_child_instance_for_parenting(child_queryset, parent_inst, *, allow_uninstalled=False):

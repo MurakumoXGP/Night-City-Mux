@@ -43,6 +43,8 @@ VENDOR_TAG_MAPPING = {
     "clothing": ("gear", "Clothing"),
     "cyberdecks": ("gear", "Cyberdeck"),
     "cyberdeck": ("gear", "Cyberdeck"),
+    "weapon_attachments": ("gear", "Weapon Attachments"),
+    "attachments": ("gear", "Weapon Attachments"),
     # Cyberware (body implants - replaces ripperdoc NPCs)
     "cyberware": ("cyberware", None),
     "ripperdoc": ("cyberware", None),  # Alias for cyberware
