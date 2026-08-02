@@ -753,20 +753,9 @@ weapons = [
         "quality": "standard",
         "description": "Exotic Medium Pistol. Fires paintballs and deals no HP damage. Acid paintballs ablate armor SP by 1 on hit. Damage cannot cause Critical Injury."
     },
-    {
-        "name": "Battleglove",
-        "damage": "2d6",
-        "rof": "2",
-        "hands": 1,
-        "concealable": False,
-        "weight": 2,
-        "value": 1000,
-        "category": "melee",
-        "clip": 0,
-        "weapon_type": "medium melee",
-        "quality": "standard",
-        "description": "Exotic wearable gauntlet with three Cyberarm/Cyberlimb option slots. Put on/remove as an Action. Cannot be concealed. Stored options are accessible while worn."
-    },
+    # Battleglove moved entirely to the Cyberware system -- it's both a weapon
+    # (is_weapon=True, read directly by combat code) and a 3-slot Cyberarm-family
+    # option host. See world/cyberware/cyberware_data.py.
     {
         "name": "Constitution Arms Hurricane Assault Weapon",
         "damage": "5d6",
@@ -1207,19 +1196,8 @@ weapons = [
         "quality": "excellent",
         "description": "Excellent Quality One-Handed Exotic Medium Melee Weapon (glove). Turn drawn: Excellent Very Heavy Melee (4d6), ROF 1. Blade extended: hand unusable. Retract/equip: Action. Concealable when retracted (Conceal/Reveal Object)."
     },
-    {
-        "name": "SlamDance Tasmanskiy Klo",
-        "damage": "4d6",
-        "rof": "1",
-        "hands": 1,
-        "concealable": False,
-        "weight": 2,
-        "value": 5000,
-        "category": "melee",
-        "weapon_type": "very heavy melee",
-        "quality": "excellent",
-        "description": "Excellent Quality Exotic Very Heavy Melee Weapon (claw). In Battleglove, draw/stow no Action. +2 Interrogation when threatening. Battleglove has 1 Option Slot. Options in that arm inaccessible."
-    },
+    # SlamDance Tasmanskiy Klo moved entirely to the Cyberware system -- it only
+    # exists installed inside a Battleglove's option slot. See cyberware_data.py.
     {
         "name": "Ranger Combat Boomerang",
         "damage": "3d6",
@@ -2961,20 +2939,8 @@ gears = [
         "weight": 0.5,
         "value": 100
     },
-    {
-        "name": "CyberDude Smart Glove",
-        "category": "Electronics",
-        "description": "Fingerless Smart Glove with Subdermal Grip and 2 Option Slots for Cyberarm/Cyberlimb options. When worn, options stored in glove can be accessed. Action to put on/off. Non-finger cyberware in hand underneath is inaccessible. Finger-based cyberware (Cyberfingers, Quick Digits, Scratchers, Rippers, Slice N' Dice) works normally. Cannot be concealed.",
-        "weight": 0.5,
-        "value": 750
-    },
-    {
-        "name": "Smart Ears",
-        "category": "Electronics",
-        "description": "Comes with non-removable Radio Scanner/Music Player and 2 Option Slots for Cyberaudio Options. When worn, user gets benefits of installed options. Installing/uninstalling Cyberaudio Option takes one hour. Only one set of Smart Ears at a time.",
-        "weight": 0.5,
-        "value": 1000
-    },
+    # CyberDude Smart Glove moved to the Cyberware system -- Cyberarm-family parent now.
+    # Smart Ears moved to the Cyberware system -- Cyberaudio-family parent now.
     {
         "name": "Zetatech CyberConductor",
         "category": "Electronics",
@@ -3405,13 +3371,8 @@ gears = [
         "weight": 0.5,
         "value": 500
     },
-    {
-        "name": "Smart Glasses",
-        "category": "Electronics",
-        "description": "Contains two option slots for Cybereye options. When worn, gives user access to benefits of these options. When cybereye options are installed, they always count as paired; costs same as installing once in a cybereye. Only one pair at a time. Enthusiasts often replace frames with nicer ones, as they aren't the prettiest out of the box.",
-        "weight": 0.5,
-        "value": 500
-    },
+    # Smart Glasses moved to the Cyberware system (world/cyberware/cyberware_data.py) --
+    # it's a Cybereye-family parent now, not a static Gear item. See that file.
     {
         "name": "Techtool",
         "category": "Tools",
@@ -4032,13 +3993,7 @@ gears = [
         "weight": 0.5,
         "value": 500
     },
-    {
-        "name": "Dynalar Xtra-Dex Smart Glove",
-        "category": "Electronics",
-        "description": "2 Cyberarm Option Slots, up to 5 Cyberfingers. Strap and plug to command. Action to put on/off. Requires Interface Plugs. Options in arm underneath inaccessible while worn. Cannot conceal.",
-        "weight": 0.5,
-        "value": 1000
-    },
+    # Dynalar Xtra-Dex Smart Glove moved to the Cyberware system -- Cyberarm-family parent now.
     {
         "name": "Esporma Environment Suit",
         "category": "Electronics",
@@ -4125,14 +4080,8 @@ gears = [
         "weight": 0.5,
         "value": 1000
     },
-    # Danger Gal Dossier: Micro Chrome
-    {
-        "name": "Smart Lens",
-        "category": "Electronics",
-        "description": "Contact lens or monocle. 1 Cybereye Option Slot. Install options like Cybereye (same cost). Pairing options not allowed. One per eye.",
-        "weight": 0,
-        "value": 500
-    },
+    # Smart Lens moved to the Cyberware system (world/cyberware/cyberware_data.py) --
+    # it's a Cybereye-family parent now, not a static Gear combo. See that file.
     # Core rulebook: generic quality-tier external cyberdecks
     {
         "name": "Excellent Quality Cyberdeck",

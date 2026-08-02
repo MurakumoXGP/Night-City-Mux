@@ -13,6 +13,7 @@ Provides staff with tools to:
 from evennia.commands.default.muxcommand import MuxCommand
 from evennia import Command, create_script
 from evennia.scripts.models import ScriptDB
+from django.db.models import Q
 from world.cyberware.models import Cyberware
 from world.ip_config import (
     get_ip_config,
@@ -122,7 +123,9 @@ class CmdRemoveCyberware(MuxCommand):
     def func(self):
         if not self.args or "=" not in self.args:
             self.caller.msg(
-                "Usage: removecyberware [/plot] <character>=<cyberware name>"
+                "Usage: removecyberware [/plot] <character>=<cyberware name>\n"
+                "       removecyberware [/plot] <character>=#<n>  (per-character number "
+                "shown on the sheet, use this to target one specific item when several share a name)"
             )
             return
 
@@ -147,10 +150,29 @@ class CmdRemoveCyberware(MuxCommand):
             self.caller.msg(f"No inventory found for {character_name}.")
             return
 
+        # Target a specific instance by its per-character display number (shown on
+        # the sheet as "#5") rather than by name, when multiple copies of the same
+        # item exist. slot_number is only unique WITHIN a character, so the
+        # character filter must be applied together with it, not after.
+        id_match = cyberware_name.lstrip("#").strip()
+        cw_instances = None
+        if cyberware_name.startswith("#") and id_match.isdigit():
+            char_obj = character if character else getattr(char_sheet, "character", None)
+            cw_instances = CyberwareInstance.objects.filter(
+                Q(character_object=char_obj) | Q(character_sheet=char_sheet),
+                slot_number=int(id_match), installed=True
+            )
+            if not cw_instances.exists():
+                self.caller.msg(
+                    f"Item #{id_match} does not belong to {character_name}, or isn't installed."
+                )
+                return
+
         # Find the cyberware instance (by character_object or character_sheet)
-        cw_instances = inventory.cyberware.filter(
-            cyberware__name__iexact=cyberware_name, installed=True
-        )
+        if cw_instances is None:
+            cw_instances = inventory.cyberware.filter(
+                cyberware__name__iexact=cyberware_name, installed=True
+            )
         if not cw_instances.exists():
             # Also try direct query in case inventory link is stale
             char_obj = character if character else char_sheet.character
@@ -251,7 +273,11 @@ class CmdUninstallCyberware(MuxCommand):
 
     def func(self):
         if not self.args or "=" not in self.args:
-            self.caller.msg("Usage: uninstallcyberware <character>=<cyberware name>")
+            self.caller.msg(
+                "Usage: uninstallcyberware <character>=<cyberware name>\n"
+                "       uninstallcyberware <character>=#<n>  (per-character number "
+                "shown on the sheet, use this to target one specific item when several share a name)"
+            )
             return
 
         character_name = self.lhs.strip().strip('"')
@@ -274,9 +300,26 @@ class CmdUninstallCyberware(MuxCommand):
             self.caller.msg(f"No inventory found for {character_name}.")
             return
 
-        cw_instances = inventory.cyberware.filter(
-            cyberware__name__iexact=cyberware_name, installed=True
-        )
+        # Target a specific instance by its per-character display number (shown on
+        # the sheet as "#5") rather than by name, when multiple copies of the same
+        # item exist.
+        id_match = cyberware_name.lstrip("#").strip()
+        cw_instances = None
+        if cyberware_name.startswith("#") and id_match.isdigit():
+            char_obj = character if character else getattr(char_sheet, "character", None)
+            cw_instances = CyberwareInstance.objects.filter(
+                slot_number=int(id_match), installed=True
+            ).filter(Q(character_object=char_obj) | Q(character_sheet=char_sheet))
+            if not cw_instances.exists():
+                self.caller.msg(
+                    f"Item #{id_match} does not belong to {character_name}, or isn't installed."
+                )
+                return
+
+        if cw_instances is None:
+            cw_instances = inventory.cyberware.filter(
+                cyberware__name__iexact=cyberware_name, installed=True
+            )
         if not cw_instances.exists():
             char_obj = character if character else char_sheet.character
             if char_obj:

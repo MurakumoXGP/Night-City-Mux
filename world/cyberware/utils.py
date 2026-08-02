@@ -237,7 +237,7 @@ def _rebuild_cybereye_option_parent_groups(installed, roots, root_sort_key_fn):
     result = []
 
     def opt_row(m):
-        opt_name = m.cyberware.name or ""
+        opt_name = f"#{m.slot_number or '?'} " + (m.cyberware.name or "")
         if getattr(m, "popup_weapon_name", None):
             opt_name = f"{opt_name} ({m.popup_weapon_name})"
         row = (opt_name, m.cyberware.type, m.cyberware.humanity_loss)
@@ -290,7 +290,7 @@ def _rebuild_cyberarm_option_parent_groups(installed, roots, root_sort_key_fn):
     result = []
 
     def opt_row(m):
-        opt_name = m.cyberware.name or ""
+        opt_name = f"#{m.slot_number or '?'} " + (m.cyberware.name or "")
         if getattr(m, "popup_weapon_name", None):
             opt_name = f"{opt_name} ({m.popup_weapon_name})"
         row = (opt_name, m.cyberware.type, m.cyberware.humanity_loss)
@@ -344,7 +344,7 @@ def _rebuild_cyberleg_option_parent_groups(installed, roots, root_sort_key_fn):
     result = []
 
     def opt_row(m):
-        opt_name = m.cyberware.name or ""
+        opt_name = f"#{m.slot_number or '?'} " + (m.cyberware.name or "")
         if getattr(m, "popup_weapon_name", None):
             opt_name = f"{opt_name} ({m.popup_weapon_name})"
         row = (opt_name, m.cyberware.type, m.cyberware.humanity_loss)
@@ -642,13 +642,13 @@ def format_cyberware_by_category(installed_instances, character_sheet):
             cat = _get_instance_category(m, pname)
 
             if m.id == root.id:
-                opt_name = m.cyberware.name
+                opt_name = f"#{m.slot_number or '?'} {m.cyberware.name}"
                 is_parent = True
             elif paired_second and m.id == paired_second.id:
-                opt_name = _parent_display_name(m, paired_second)
+                opt_name = f"#{m.slot_number or '?'} {_parent_display_name(m, paired_second)}"
                 is_parent = True
             else:
-                opt_name = _child_display_name(m)
+                opt_name = f"#{m.slot_number or '?'} {_child_display_name(m)}"
                 is_parent = False
 
             if cat in PARENT_GROUPED_CATEGORIES:
@@ -915,7 +915,7 @@ def format_cyberware_by_category(installed_instances, character_sheet):
                     if cat == "Chipware"
                     else get_parent_instance_slot_usage(parent_inst)
                 )
-                pname = _parent_display_name(parent_inst) or parent_inst.cyberware.name
+                pname = f"#{parent_inst.slot_number or '?'} " + (_parent_display_name(parent_inst) or parent_inst.cyberware.name)
                 cw_type = str(parent_inst.cyberware.type or "")[:TYPE_W]
                 hl = parent_inst.cyberware.humanity_loss or 0
                 if slot_usage:
@@ -941,7 +941,7 @@ def format_cyberware_by_category(installed_instances, character_sheet):
                     if isinstance(item, tuple) and len(item) == 2 and hasattr(item[0], "cyberware"):
                         # Limb under borgware: (limb_inst, opts) - secondary parenting
                         limb_inst, opts = item
-                        limb_name = limb_inst.cyberware.name or ""
+                        limb_name = f"#{limb_inst.slot_number or '?'} " + (limb_inst.cyberware.name or "")
                         limb_type = str(limb_inst.cyberware.type or "")[:TYPE_W]
                         limb_hl = limb_inst.cyberware.humanity_loss or 0
                         limb_slot = get_parent_instance_slot_usage(limb_inst)

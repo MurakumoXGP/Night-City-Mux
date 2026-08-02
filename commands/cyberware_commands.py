@@ -196,14 +196,33 @@ class CmdCyberware(MuxCommand):
         if not child_candidates.exists():
             self.caller.msg(f"You don't have installed cyberware named '{child_name}'.")
             return
-        parent_inst = CyberwareInstance.objects.filter(
-            character_sheet=character_sheet,
-            installed=True,
-            cyberware__name__iexact=parent_name,
-        ).first()
-        if not parent_inst:
-            self.caller.msg(f"You don't have installed cyberware named '{parent_name}'.")
-            return
+        id_match = parent_name.lstrip("#").strip()
+        if parent_name.startswith("#") and id_match.isdigit():
+            parent_inst = CyberwareInstance.objects.filter(
+                character_sheet=character_sheet,
+                installed=True,
+                slot_number=int(id_match),
+            ).first()
+            if not parent_inst:
+                self.caller.msg(f"You don't have item #{id_match} installed.")
+                return
+        else:
+            parent_matches = list(CyberwareInstance.objects.filter(
+                character_sheet=character_sheet,
+                installed=True,
+                cyberware__name__iexact=parent_name,
+            ).select_related("cyberware"))
+            if not parent_matches:
+                self.caller.msg(f"You don't have installed cyberware named '{parent_name}'.")
+                return
+            if len(parent_matches) > 1:
+                lines = [f"You have {len(parent_matches)} installed '{parent_name}' items. Specify which one:"]
+                for cand in sorted(parent_matches, key=lambda c: c.slot_number or 0):
+                    lines.append(f"  #{cand.slot_number or '?'}  {cand.cyberware.name}")
+                lines.append(f"Then run: cyberware/parent {child_name}=#<n>")
+                self.caller.msg("\n".join(lines))
+                return
+            parent_inst = parent_matches[0]
         child_inst, pick_status = select_child_instance_for_parenting(child_candidates, parent_inst)
         if pick_status == "already":
             self.caller.msg(f"{child_inst.cyberware.name} is already assigned to {parent_inst.cyberware.name}.")
@@ -393,11 +412,19 @@ class CmdCyberware(MuxCommand):
             self.caller.msg("Usage: cyberware/install <name>")
             self.caller.msg("For Popup Melee/Ranged: cyberware/install \"Popup Melee Weapon\" = \"Light Melee Weapon\"")
             return
-        cw_instance = CyberwareInstance.objects.filter(
-            Q(character_sheet=character_sheet) | Q(character_object=self.caller),
-            cyberware__name__iexact=cyberware_name,
-            installed=False
-        ).first()
+        id_match = cyberware_name.lstrip("#").strip()
+        if cyberware_name.startswith("#") and id_match.isdigit():
+            cw_instance = CyberwareInstance.objects.filter(
+                Q(character_sheet=character_sheet) | Q(character_object=self.caller),
+                slot_number=int(id_match),
+                installed=False
+            ).first()
+        else:
+            cw_instance = CyberwareInstance.objects.filter(
+                Q(character_sheet=character_sheet) | Q(character_object=self.caller),
+                cyberware__name__iexact=cyberware_name,
+                installed=False
+            ).first()
         if not cw_instance:
             self.caller.msg(
                 f"You don't have uninstalled cyberware named '{cyberware_name}'. "
@@ -510,13 +537,21 @@ class CmdCyberware(MuxCommand):
         if not cyberware_name:
             self.caller.msg("Usage: cyberware/activate <name>")
             return
-        # Find installed cyberware: built-in weapons (is_weapon) OR Popup Melee/Ranged with popup_weapon_name
-        cw_instance = CyberwareInstance.objects.filter(
-            character_sheet=character_sheet,
-            installed=True,
-        ).filter(
-            Q(cyberware__name__iexact=cyberware_name) | Q(cyberware__name__icontains=cyberware_name)
-        ).first()
+        id_match = cyberware_name.lstrip("#").strip()
+        if cyberware_name.startswith("#") and id_match.isdigit():
+            cw_instance = CyberwareInstance.objects.filter(
+                character_sheet=character_sheet,
+                installed=True,
+                slot_number=int(id_match),
+            ).first()
+        else:
+            # Find installed cyberware: built-in weapons (is_weapon) OR Popup Melee/Ranged with popup_weapon_name
+            cw_instance = CyberwareInstance.objects.filter(
+                character_sheet=character_sheet,
+                installed=True,
+            ).filter(
+                Q(cyberware__name__iexact=cyberware_name) | Q(cyberware__name__icontains=cyberware_name)
+            ).first()
         if not cw_instance:
             self.caller.msg(f"You don't have installed cyberware named '{cyberware_name}'.")
             return

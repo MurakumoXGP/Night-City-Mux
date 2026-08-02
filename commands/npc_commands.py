@@ -599,7 +599,19 @@ class CmdNpc(MuxCommand):
             self.caller.msg(f"Added {cw.name} to {npc.key}.")
         else:
             inv, _ = Inventory.get_or_create_for_character(npc)
-            inst = inv.cyberware.filter(cyberware__name__iexact=cw_name, installed=True).first()
+            id_match = cw_name.lstrip("#").strip()
+            if cw_name.startswith("#") and id_match.isdigit():
+                inst = inv.cyberware.filter(slot_number=int(id_match), installed=True).first()
+            else:
+                matches = list(inv.cyberware.filter(cyberware__name__iexact=cw_name, installed=True).select_related("cyberware"))
+                if len(matches) > 1:
+                    lines = [f"{npc.key} has {len(matches)} installed '{cw_name}' items. Specify which one:"]
+                    for cand in sorted(matches, key=lambda c: c.slot_number or 0):
+                        lines.append(f"  #{cand.slot_number or '?'}  {cand.cyberware.name}")
+                    lines.append(f"Then run: +npc/cyber remove/{npc.key}=#<n>")
+                    self.caller.msg("\n".join(lines))
+                    return
+                inst = matches[0] if matches else None
             if not inst:
                 self.caller.msg(f"'{cw_name}' not installed on {npc.key}.")
                 return

@@ -386,6 +386,28 @@ CYBERWARE_DATA_LIST = [
         "requirements": "Cybereye",
     },
 
+    # Danger Gal Dossier: Micro Chrome -- worn Cybereye-option hosts, not implants.
+    # Humanity Loss is 0 for the base item itself; installed options keep their own
+    # normal Humanity Loss values from the list above.
+    {
+        "name": "Smart Lens",
+        "type": "Cyberoptics",
+        "slots": 0,
+        "humanity_loss": 0,
+        "cost": 500,
+        "is_weapon": False,
+        "description": "Contact lens or monocle, worn rather than implanted. Provides 1 Cybereye Option Slot. Options install and cost the same as on a Cybereye. Pairing is not allowed on a Smart Lens -- options that require Pairing (Image Enhance, Low Light/IR/UV, Virtuality) cannot be installed here. Sold one at a time; wear one per eye.",
+    },
+    {
+        "name": "Smart Glasses",
+        "type": "Cyberoptics",
+        "slots": 0,
+        "humanity_loss": 0,
+        "cost": 500,
+        "is_weapon": False,
+        "description": "Worn eyewear, not implanted, providing 2 Cybereye Option Slots. Installed options always count as Paired between the two lenses and cost the same as a single Cybereye installation, so Pairing-required options (Image Enhance, Low Light/IR/UV, Virtuality) work normally here. Only one pair worn at a time. Enthusiasts often swap the stock frames for nicer ones.",
+    },
+
     # Black Chrome Cyberoptics
     {
         "name": "Sponsored Cybereye",
@@ -587,6 +609,17 @@ CYBERWARE_DATA_LIST = [
         "is_weapon": False,
         "description": "User adds +2 to their Human Perception and Interrogation Skills. User can activate a special lie-detecting function for a minute with an Action, during which time the GM rolls all your Character's Human Perception and Interrogation Checks privately, beeping once whenever it detects a lie, or whenever they desire after a failed roll. Beware of false positives and negatives. Requires a Cyberaudio Suite.",
         "requirements": "Cyberaudio Suite",
+    },
+
+    # Danger Gal Dossier: Micro Chrome -- worn Cyberaudio-option host, not implanted.
+    {
+        "name": "Smart Ears",
+        "type": "Cyberaudio",
+        "slots": 0,
+        "humanity_loss": 0,
+        "cost": 1000,
+        "is_weapon": False,
+        "description": "Worn earpieces, not implanted. Comes with a built-in, non-removable Radio Scanner/Music Player and provides 2 Cyberaudio Option Slots. Installing or uninstalling an option takes one hour. Only one set worn at a time.",
     },
 
 
@@ -826,6 +859,57 @@ CYBERWARE_DATA_LIST = [
         "cost": 500,
         "is_weapon": False,
         "description": "Replacement arm. Does not have to be paired. A Cyberarm has 4 Option Slots for Cyberarm or Cyberlimb Options, and each comes pre-installed with a Standard Hand that doesn't cost any Humanity Loss or take up a Cyberarm Option Slot."
+    },
+
+    # Danger Gal Dossier: Micro Chrome -- worn Cyberarm-option hosts, not implanted.
+    # These do not replace the arm underneath; the meat/cyberware hand inside becomes
+    # inaccessible while worn (finger-based cyberware still works per description).
+    {
+        "name": "CyberDude Smart Glove",
+        "type": "Cyberarm",
+        "slots": 0,
+        "humanity_loss": 0,
+        "cost": 750,
+        "is_weapon": False,
+        "description": "Fingerless smart glove, worn rather than implanted, with a built-in Subdermal Grip and 2 Option Slots for Cyberarm/Cyberlimb options. An Action to put on or take off. Non-finger cyberware in the hand underneath is inaccessible while worn; finger-based cyberware (Cyberfingers, Quick Digits, Scratchers, Rippers, Slice N' Dice) still works normally. Cannot be concealed."
+    },
+    {
+        "name": "Dynalar Xtra-Dex Smart Glove",
+        "type": "Cyberarm",
+        "slots": 0,
+        "humanity_loss": 0,
+        "cost": 1000,
+        "is_weapon": False,
+        "description": "Worn smart glove, strapped and plugged in rather than implanted, providing 2 Cyberarm Option Slots and support for up to 5 Cyberfingers. Requires Interface Plugs. An Action to put on or take off. Options in the arm underneath are inaccessible while worn. Cannot be concealed."
+    },
+
+    # Danger Gal Dossier: Micro Chrome -- Battleglove is both a weapon in its own
+    # right (is_weapon=True, read directly by combat resolution) and a worn
+    # 3-slot Cyberarm-family option host, same as the smart gloves above.
+    {
+        "name": "Battleglove",
+        "type": "Cyberarm",
+        "slots": 0,
+        "humanity_loss": 0,
+        "cost": 1000,
+        "is_weapon": True,
+        "damage_dice": 2,
+        "damage_die_type": 6,
+        "rate_of_fire": 2,
+        "description": "Exotic wearable gauntlet, worn rather than implanted, functioning as a Medium Melee Weapon (2d6 damage, 2 ROF) with three Cyberarm/Cyberlimb Option Slots. An Action to put on or take off. Cannot be concealed. Options stored inside remain accessible while worn."
+    },
+    {
+        "name": "SlamDance Tasmanskiy Klo",
+        "type": "Cyberarm",
+        "slots": 1,
+        "humanity_loss": 0,
+        "cost": 5000,
+        "is_weapon": True,
+        "damage_dice": 4,
+        "damage_die_type": 6,
+        "rate_of_fire": 1,
+        "description": "Excellent Quality Exotic Very Heavy Melee Weapon (claw), installed inside a Battleglove's Option Slot rather than worn or implanted on its own. Draw and stow with no Action while in the Battleglove. Grants +2 to Interrogation Checks when used to threaten someone. Takes up 1 of the Battleglove's 3 Option Slots; the arm underneath a worn Battleglove is inaccessible regardless.",
+        "requirements": "Battleglove",
     },
     {
         "name": "Standard Hand",

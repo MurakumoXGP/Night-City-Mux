@@ -18,6 +18,8 @@ from world.cyberware.validation import (
     allows_multiples,
     FOUNDATION_EYE_NAME_LOWERS,
     _CYBEREYE_INSTANCE_NAMES,
+    _TRUE_CYBEREYE_LOWERS,
+    MICRO_CHROME_HOST_LOWERS,
 )
 from world.cyberware.cyberware_data import BODYCULPT_PACKAGES
 from evennia.utils.evmenu import get_input, EvMenu
@@ -140,6 +142,8 @@ def _get_chargen_catalog(category=None, subcategory=None):
                     })
     if category is None or category == "cyberware":
         for cw in Cyberware.objects.filter(cost__lte=CHARGEN_MAX_PRICE).order_by("type", "name"):
+            if cw.name.strip().lower() in MICRO_CHROME_HOST_LOWERS:
+                continue  # staff-granted only, not for player browsing/purchase
             if subcategory and getattr(cw, "type", "").lower() != subcategory.lower():
                 continue
             catalog.append({
@@ -301,6 +305,8 @@ def _get_vendor_catalog(room, main_cat=None, subcategory=None):
     # Cyberware
     if main_cat is None or main_cat == "cyberware":
         for cw in Cyberware.objects.all().order_by("type", "name"):
+            if cw.name.strip().lower() in MICRO_CHROME_HOST_LOWERS:
+                continue  # staff-granted only, not for player browsing/purchase
             entry = {
                 "name": cw.name,
                 "value": cw.cost,
@@ -894,6 +900,15 @@ class CmdBuy(MuxCommand):
     def _buy_cyberware_from_chargen(self, item, stash=False, chargen_purchase=False):
         """Handle chargen purchase of body cyberware (from Cyberware model). stash=True = buy without installing."""
         cyberware = item["_cyberware"]
+        # Danger Gal Dossier Micro Chrome hosts: staff-granted only, never player-purchasable
+        # (vendor room or chargen). Staff can still give these out with additem or other
+        # admin tools, which bypass this command entirely.
+        if (getattr(cyberware, "name", "") or "").strip().lower() in MICRO_CHROME_HOST_LOWERS:
+            self.caller.msg(
+                f"{cyberware.name} isn't available for purchase. It's a staff-granted item -- "
+                f"contact staff if you'd like one."
+            )
+            return
         # Bodysculpt packages: add all package cyberware to character
         if getattr(cyberware, "type", "") == "Bodysculpt Package":
             self._buy_bodysculpt_package(cyberware, chargen_purchase)
@@ -934,7 +949,7 @@ class CmdBuy(MuxCommand):
                     cyberware__name__in=["Cyberarm", "Neo-Soviet Cyberarm"],
                     installed=True,
                 ).count()
-            elif cw_lower in FOUNDATION_EYE_NAME_LOWERS:
+            elif cw_lower in _TRUE_CYBEREYE_LOWERS:
                 count = CyberwareInstance.objects.filter(
                     character_sheet=character_sheet,
                     cyberware__name__in=_CYBEREYE_INSTANCE_NAMES,
@@ -965,7 +980,7 @@ class CmdBuy(MuxCommand):
                         f"It will be added to your inventory (uninstalled). "
                         f"Install an Artificial Shoulder Mount first, then use |wcyberware/install {cyberware.name}|n. No humanity loss."
                     )
-            elif count >= 2 and cw_lower in FOUNDATION_EYE_NAME_LOWERS:
+            elif count >= 2 and cw_lower in _TRUE_CYBEREYE_LOWERS:
                 has_mom = CyberwareInstance.objects.filter(
                     character_sheet=character_sheet,
                     cyberware__name__iexact="MultiOptic Mount",
@@ -1766,7 +1781,11 @@ class CmdRefund(MuxCommand):
                 refund_value = vehicle.value
                 inventory.vehicles.remove(vehicle)
         elif match_type == "cyberware":
-            instance = inventory.cyberware.filter(cyberware__name__iexact=item_name).first()
+            id_match = item_name.lstrip("#").strip()
+            if item_name.startswith("#") and id_match.isdigit():
+                instance = inventory.cyberware.filter(slot_number=int(id_match)).first()
+            else:
+                instance = inventory.cyberware.filter(cyberware__name__iexact=item_name).first()
             if instance:
                 refund_value = instance.cyberware.cost
                 inventory.cyberware.remove(instance)
@@ -2442,8 +2461,16 @@ def get_character_inventory(character):
 
 
 def find_item_in_inventory(inventory, item_name):
-    """Find item by name. Returns (item, category) or (None, None). category: weapon/armor/gear/vehicle/cyberware"""
+    """Find item by name. Returns (item, category) or (None, None). category: weapon/armor/gear/vehicle/cyberware
+    For cyberware, "#<n>" (the per-character display number shown on the sheet) targets one
+    specific instance, which matters once a character owns more than one item with the same name."""
     item_name_lower = item_name.lower().strip()
+    id_match = item_name.lstrip("#").strip()
+    if item_name.startswith("#") and id_match.isdigit():
+        cw = inventory.cyberware.filter(slot_number=int(id_match), installed=False).first()
+        if cw:
+            return cw, "cyberware"
+        return None, None
     for cat in ['weapons', 'armor', 'gear', 'vehicles']:
         qs = getattr(inventory, cat).filter(name__iexact=item_name_lower)
         if qs.exists():

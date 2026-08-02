@@ -35,8 +35,39 @@ _CYBEROPTIC_FOUNDATION_LOWERS = (
     "sponsored cybereye",
     "kiroshi monovision",
     "cyclops international bug eye",
+    "smart lens",
+    "smart glasses",
 )
 FOUNDATION_EYE_NAME_LOWERS = frozenset(_CYBEROPTIC_FOUNDATION_LOWERS)
+
+# Danger Gal Dossier: worn Cyberarm-option hosts (NOT real Cyberarms). Kept deliberately
+# separate from ARM_LIMB_HOST_LOWERS -- that set also drives Artificial Shoulder Mount's
+# "how many extra arms are attached" counter and paired-weapon (Gorilla Arm/Mantis Blade)
+# logic, neither of which should ever apply to a worn glove.
+GLOVE_ARM_OPTION_HOST_LOWERS = frozenset({
+    "cyberdude smart glove",
+    "dynalar xtra-dex smart glove",
+    "battleglove",
+})
+
+# Danger Gal Dossier: worn Cyberaudio-option host (NOT a Cyberaudio Suite implant).
+CYBERAUDIO_WEARABLE_HOST_LOWERS = frozenset({"smart ears"})
+
+# All worn Micro Chrome hosts together, regardless of which family they belong to.
+# Used by allows_multiples() to detect options that are valid on both a real body
+# part and a worn item, which therefore need to be purchasable more than once.
+MICRO_CHROME_HOST_LOWERS = frozenset(
+    {"smart lens", "smart glasses"} | GLOVE_ARM_OPTION_HOST_LOWERS | CYBERAUDIO_WEARABLE_HOST_LOWERS
+)
+
+# Cybereye options whose RAW text requires Pairing (installed twice across two hosts)
+# to function. Not mechanically enforced for real Cybereyes today, but Smart Lens
+# explicitly forbids Pairing outright, so these are blocked there specifically.
+PAIRING_REQUIRED_CHILDREN = frozenset({
+    "image enhance",
+    "low light-ir-uv",
+    "virtuality",
+})
 
 # Cosmetic coverings can mount on cybereyes too (house rule). RAW Reinforced/Hardened Shielding = limbs only (below).
 _CYBERLIMB_AND_EYE_DECOR_PARENTS = _CYBERLIMB_OPTION_PARENTS + _CYBEROPTIC_FOUNDATION_LOWERS
@@ -62,6 +93,9 @@ VALID_PARENT_NAMES = frozenset({
     "multioptic mount",      # up to 5 additional cybereyes
     "sensor array",          # +5 cyberaudio options, parents cyberaudio suite
     "artificial shoulder mount",  # up to 2 additional cyberarms
+    # Danger Gal Dossier: worn Micro Chrome parents (already added to their family sets above)
+    *GLOVE_ARM_OPTION_HOST_LOWERS,
+    *CYBERAUDIO_WEARABLE_HOST_LOWERS,
 })
 
 # Which parent types can have which child types. Child name -> allowed parent name patterns.
@@ -199,6 +233,12 @@ PARENT_SLOTS = {
     "multioptic mount": 5,   # additional cybereyes
     "sensor array": 5,       # additional cyberaudio options
     "artificial shoulder mount": 2,  # additional cyberarms
+    "smart lens": 1,         # Danger Gal Dossier: worn, not implanted
+    "smart glasses": 2,      # Danger Gal Dossier: worn, not implanted
+    "smart ears": 2,         # Danger Gal Dossier: worn, not implanted
+    "cyberdude smart glove": 2,       # Danger Gal Dossier: worn, not implanted
+    "dynalar xtra-dex smart glove": 2,  # Danger Gal Dossier: worn, not implanted
+    "battleglove": 3,        # Danger Gal Dossier: worn, not implanted; is_weapon too
 }
 
 # Items that use 0 slots (coverings, etc.)
@@ -242,6 +282,21 @@ MULTIPLE_ALLOWED = frozenset({
     "standard hand",
     "standard foot",
     "modular finger cyberhand",
+    # Danger Gal Dossier: worn hosts. A character may reasonably own more than one
+    # (e.g. two Smart Lenses, one per eye), and none of these are subject to the
+    # real-Cybereye Pairing/MultiOptic Mount limits above.
+    "smart lens",
+    "smart glasses",
+    "smart ears",
+    "cyberdude smart glove",
+    "dynalar xtra-dex smart glove",
+    "battleglove",
+    # Pre-existing gap, fixed in passing: these three explicitly require Pairing
+    # (installed twice, across two separate Cybereyes) to function at all per their
+    # own RAW text, but were never purchasable a second time before this fix.
+    "image enhance",
+    "low light-ir-uv",
+    "virtuality",
 })
 
 # Fashionware type - all share 7 slots; allow multiples
@@ -279,6 +334,13 @@ _CYBEREYE_INSTANCE_NAMES = [
     "Kiroshi MonoVision",
     "Cyclops International Bug Eye",
 ]
+
+# Real, implanted Cybereyes only -- excludes Smart Lens/Smart Glasses (worn, Danger
+# Gal Dossier). Use this (never FOUNDATION_EYE_NAME_LOWERS) for anything about
+# Pairing purchase gates, the "2 eyes needs a MultiOptic Mount" limit, or MultiOptic
+# Mount's own child-eye counting -- those rules are about biological eye replacement
+# and must never fire because someone is buying or wearing a Smart Lens.
+_TRUE_CYBEREYE_LOWERS = frozenset(n.lower() for n in _CYBEREYE_INSTANCE_NAMES)
 
 # Installed limb rows that count as cyberleg hosts (for decor / optional cap math)
 _CYBERLEG_INSTANCE_NAMES = [
@@ -318,6 +380,15 @@ def allows_multiples(cyberware):
     if name in MULTIPLE_ALLOWED:
         return True
     if cw_type == FASHIONWARE_TYPE:
+        return True
+    # Any option that's valid on one of the worn Danger Gal Dossier hosts (Smart
+    # Lens, Smart Glasses, Smart Ears, either smart glove, Battleglove) as well as
+    # a real Cybereye/Cyberaudio Suite/Cyberarm needs to be purchasable more than
+    # once -- a character may reasonably want the same option installed on both a
+    # real body part and a worn Micro Chrome item. Generic on purpose so this stays
+    # correct if new options are added later without needing another hand-edit here.
+    valid_parents = get_valid_parents_for_child(cyberware)
+    if valid_parents and any(p in MICRO_CHROME_HOST_LOWERS for p in valid_parents):
         return True
     return False
 
@@ -611,6 +682,12 @@ def get_parent_instance_slot_usage(parent_inst):
         "multioptic mount",
         "sensor array",
         "artificial shoulder mount",
+        "smart lens",
+        "smart glasses",
+        "smart ears",
+        "cyberdude smart glove",
+        "dynalar xtra-dex smart glove",
+        "battleglove",
     ):
         total = PARENT_SLOTS.get(parent_name, 4)
     else:
@@ -674,6 +751,17 @@ def parent_name_matches_child_valid_hosts(parent_name_norm, valid_parents):
         return True
     vp_set = frozenset(valid_parents)
     if vp_set <= ARM_LIMB_HOST_LOWERS and parent_name_norm in ARM_LIMB_HOST_LOWERS:
+        return True
+    # Danger Gal Dossier gloves: accept the same arm-only options a Cyberarm would,
+    # without joining ARM_LIMB_HOST_LOWERS itself (that set also drives Artificial
+    # Shoulder Mount's arm counter and Gorilla Arm/Mantis Blade pairing logic).
+    if vp_set <= ARM_LIMB_HOST_LOWERS and parent_name_norm in GLOVE_ARM_OPTION_HOST_LOWERS:
+        return True
+    # Danger Gal Dossier Smart Ears: accept the same options a Cyberaudio Suite would.
+    if (
+        vp_set & {"cyberaudio suite", "discount cyberaudio suite"}
+        and parent_name_norm in CYBERAUDIO_WEARABLE_HOST_LOWERS
+    ):
         return True
     return False
 
@@ -823,6 +911,15 @@ def validate_parent_child(parent_inst, child_inst):
     if not ok:
         return False, msg
 
+    # 2d. Smart Lens forbids Pairing (Danger Gal Dossier). Options that require being
+    # Paired across two separate hosts cannot be installed on a Smart Lens at all.
+    # Smart Glasses is exempt -- its own two lenses count as an internal pair.
+    if parent_name == "smart lens" and child_name in PAIRING_REQUIRED_CHILDREN:
+        return False, (
+            f"{child_cw.name} requires Pairing across two hosts, and Pairing is not allowed "
+            f"on a Smart Lens. Install {child_cw.name} on a Cybereye pair or Smart Glasses instead."
+        )
+
     # 3. Slot availability
     ok, msg = validate_slot_availability_for_parent(parent_inst, child_inst)
     if not ok:
@@ -900,6 +997,16 @@ def validate_slot_availability_for_parent(parent_inst, child_inst):
         if not slot_info:
             return True, ""
         total_slots, used_slots = slot_info[1], slot_info[0]
+    elif parent_name in GLOVE_ARM_OPTION_HOST_LOWERS:
+        slot_info = get_parent_instance_slot_usage(parent_inst)
+        if not slot_info:
+            return True, ""
+        total_slots, used_slots = slot_info[1], slot_info[0]
+    elif parent_name in CYBERAUDIO_WEARABLE_HOST_LOWERS:
+        slot_info = get_parent_instance_slot_usage(parent_inst)
+        if not slot_info:
+            return True, ""
+        total_slots, used_slots = slot_info[1], slot_info[0]
     elif parent_name == "artificial shoulder mount":
         if child_name in ARM_LIMB_HOST_LOWERS:
             max_limbs = PARENT_SLOTS.get("artificial shoulder mount", 2)
@@ -920,12 +1027,13 @@ def validate_slot_availability_for_parent(parent_inst, child_inst):
         total_slots, used_slots = slot_info[1], slot_info[0]
     elif parent_name == "multioptic mount":
         # Child is almost always a new Cybereye limb under this mount (not an optic option).
-        if child_name in FOUNDATION_EYE_NAME_LOWERS:
+        # Real Cybereyes only -- a Smart Lens is never a valid "extra eye" here.
+        if child_name in _TRUE_CYBEREYE_LOWERS:
             max_limbs = PARENT_SLOTS.get("multioptic mount", 5)
             n_eyes = sum(
                 1
                 for c in parent_inst.children.filter(installed=True)
-                if _norm(c.cyberware.name) in FOUNDATION_EYE_NAME_LOWERS
+                if _norm(c.cyberware.name) in _TRUE_CYBEREYE_LOWERS
             )
             if n_eyes >= max_limbs:
                 return False, (

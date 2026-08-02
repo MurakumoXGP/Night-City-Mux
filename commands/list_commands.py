@@ -15,6 +15,7 @@ from world.inventory.models import (
     WeaponAttachment,
 )
 from world.cyberware.models import Cyberware
+from world.cyberware.validation import MICRO_CHROME_HOST_LOWERS
 from world.netrunning.deckoptions import programs, hardware, black_ice, quickhacks
 
 
@@ -391,6 +392,8 @@ class CmdLookup(MuxCommand):
             out.insert(0, section_header("Weapon Attachments", width=78))
         elif sub in ("cyberware",):
             for c in Cyberware.objects.all().order_by("type", "name")[:80]:
+                if c.name.strip().lower() in MICRO_CHROME_HOST_LOWERS:
+                    continue  # staff-granted only, not for player browsing/purchase
                 out.append(f"  |c{c.name}|n ({c.type}) |g{c.cost}eb|n")
             out.insert(0, section_header("Cyberware", width=78))
         else:

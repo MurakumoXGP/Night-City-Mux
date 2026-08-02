@@ -5,6 +5,7 @@ from evennia.commands.default.muxcommand import MuxCommand
 from world.cyberware.models import Cyberware
 from world.inventory.models import CyberwareInstance, Inventory
 from world.cyberpunk_sheets.edgerunner import EdgerunnerChargen
+from django.db.models import Q
 
 
 def _cyberware_allows_multiple_installed_instances(cyberware: Cyberware) -> bool:
@@ -35,6 +36,15 @@ def _cyberware_allows_multiple_installed_instances(cyberware: Cyberware) -> bool
         "standard hand",
         "standard foot",
         "modular finger cyberhand",
+        # Danger Gal Dossier: worn Micro Chrome hosts -- a character may own more
+        # than one (e.g. two Smart Lenses, one per eye). Kept in sync with
+        # MULTIPLE_ALLOWED in world/cyberware/validation.py.
+        "smart lens",
+        "smart glasses",
+        "smart ears",
+        "cyberdude smart glove",
+        "dynalar xtra-dex smart glove",
+        "battleglove",
     }
 
 
@@ -133,43 +143,77 @@ class CmdAddCyberware(MuxCommand):
                 validate_parent_for_new_child,
             )
 
-            parent_candidates = list(
-                inventory.cyberware.filter(
-                    cyberware__name__iexact=parent_host_name,
-                    installed=True,
-                ).select_related("cyberware")
-            )
-            if not parent_candidates:
-                self.caller.msg(
-                    f"{character.key} has no installed '{parent_host_name}' to attach {cyberware.name} to."
-                )
-                return
-
-            parent_inst = None
-            err = None
-            host_l = parent_host_name.lower()
-            if host_l in ("cyberaudio suite", "discount cyberaudio suite"):
-                parent_inst, err = find_best_cyberaudio_parent(
-                    char_sheet, cyberware, character=character
-                )
-                if err:
-                    self.caller.msg(err)
-                    return
-            elif host_l in ("chipware socket", "budget chipware socket"):
-                for cand in parent_candidates:
-                    ok, _ = validate_parent_for_new_child(cand, cyberware)
-                    if ok:
-                        parent_inst = cand
-                        break
+            id_match = parent_host_name.lstrip("#").strip()
+            if parent_host_name.startswith("#") and id_match.isdigit():
+                # Explicit per-character number given -- resolve directly, no ambiguity possible.
+                parent_inst = CyberwareInstance.objects.filter(
+                    character_object=character, character_sheet=char_sheet,
+                    slot_number=int(id_match), installed=True,
+                ).first()
                 if parent_inst is None:
-                    _, err = validate_parent_for_new_child(parent_candidates[0], cyberware)
-                    self.caller.msg(err or f"{cyberware.name} cannot use that socket.")
+                    parent_inst = CyberwareInstance.objects.filter(
+                        Q(character_object=character) | Q(character_sheet=char_sheet),
+                        slot_number=int(id_match), installed=True,
+                    ).first()
+                if parent_inst is None:
+                    self.caller.msg(
+                        f"Item #{id_match} does not belong to {character.key}, or isn't installed."
+                    )
                     return
+                err = None
             else:
-                parent_inst, err = select_balanced_parent_instance(parent_candidates, cyberware)
-                if parent_inst is None:
-                    self.caller.msg(err or f"No valid parent for {cyberware.name}.")
+                parent_candidates = list(
+                    inventory.cyberware.filter(
+                        cyberware__name__iexact=parent_host_name,
+                        installed=True,
+                    ).select_related("cyberware")
+                )
+                if not parent_candidates:
+                    self.caller.msg(
+                        f"{character.key} has no installed '{parent_host_name}' to attach {cyberware.name} to."
+                    )
                     return
+
+                if len(parent_candidates) > 1:
+                    # Ambiguous by name -- list the numbered candidates and ask, rather
+                    # than silently guessing which one the staffer meant.
+                    lines = [
+                        f"{character.key} has {len(parent_candidates)} installed '{parent_host_name}' items. "
+                        f"Specify which one:"
+                    ]
+                    for cand in sorted(parent_candidates, key=lambda c: c.slot_number or 0):
+                        lines.append(f"  #{cand.slot_number or '?'}  {cand.cyberware.name}")
+                    lines.append(
+                        f"Then run: addcyberware/parent {cyberware.name}/#<n>={character.key}"
+                    )
+                    self.caller.msg("\n".join(lines))
+                    return
+
+                parent_inst = None
+                err = None
+                host_l = parent_host_name.lower()
+                if host_l in ("cyberaudio suite", "discount cyberaudio suite"):
+                    parent_inst, err = find_best_cyberaudio_parent(
+                        char_sheet, cyberware, character=character
+                    )
+                    if err:
+                        self.caller.msg(err)
+                        return
+                elif host_l in ("chipware socket", "budget chipware socket"):
+                    for cand in parent_candidates:
+                        ok, _ = validate_parent_for_new_child(cand, cyberware)
+                        if ok:
+                            parent_inst = cand
+                            break
+                    if parent_inst is None:
+                        _, err = validate_parent_for_new_child(parent_candidates[0], cyberware)
+                        self.caller.msg(err or f"{cyberware.name} cannot use that socket.")
+                        return
+                else:
+                    parent_inst, err = select_balanced_parent_instance(parent_candidates, cyberware)
+                    if parent_inst is None:
+                        self.caller.msg(err or f"No valid parent for {cyberware.name}.")
+                        return
 
             cw_instance = CyberwareInstance.objects.create(
                 cyberware=cyberware,
@@ -271,13 +315,20 @@ class CmdParentCyberware(MuxCommand):
 
     Usage:
       parentcyberware <character name>=<child cyberware>/<parent cyberware>
+      parentcyberware <character name>=<child cyberware>/#<n>
 
     Examples:
       parentcyberware Soma=Anti-Dazzle/Cybereye
       parentcyberware Soma="Popup Ranged Weapon"/Cyberarm
+      parentcyberware Soma=Targeting Scope/#47
 
     Assigns the child option to the parent. Both must belong to the character.
     Child can be installed (reassign) or uninstalled (install and assign).
+    Use "#<n>" for the parent (the per-character display number shown on the
+    sheet, e.g. "#5") to
+    target one specific host when the character has several items with the
+    same name (e.g. two Smart Lenses) -- otherwise the parent is matched by
+    name, which is ambiguous if there's more than one match.
     """
 
     key = "parentcyberware"
@@ -319,12 +370,38 @@ class CmdParentCyberware(MuxCommand):
             self.caller.msg(f"{character.key} does not have a character sheet.")
             return
 
-        # Find parent instance (must be installed)
-        parent_inst = CyberwareInstance.objects.filter(
-            character_sheet=char_sheet,
-            cyberware__name__iexact=parent_name,
-            installed=True,
-        ).first()
+        # Find parent instance (must be installed). Accept "#<n>" (the per-character
+        # display number shown on the sheet) to target one specific host when several
+        # share a name, e.g. two Smart Lenses -- otherwise falls back to name lookup.
+        id_match = parent_name.lstrip("#").strip()
+        if parent_name.startswith("#") and id_match.isdigit():
+            parent_inst = CyberwareInstance.objects.filter(
+                slot_number=int(id_match), character_sheet=char_sheet, installed=True,
+            ).first()
+            if not parent_inst:
+                self.caller.msg(
+                    f"Item #{id_match} does not belong to {character.key}, or isn't installed."
+                )
+                return
+        else:
+            parent_matches = list(CyberwareInstance.objects.filter(
+                character_sheet=char_sheet,
+                cyberware__name__iexact=parent_name,
+                installed=True,
+            ).select_related("cyberware"))
+            if len(parent_matches) > 1:
+                lines = [
+                    f"{character.key} has {len(parent_matches)} installed '{parent_name}' items. "
+                    f"Specify which one:"
+                ]
+                for cand in sorted(parent_matches, key=lambda c: c.slot_number or 0):
+                    lines.append(f"  #{cand.slot_number or '?'}  {cand.cyberware.name}")
+                lines.append(
+                    f"Then run: parentcyberware {character.key}={child_name}/#<n>"
+                )
+                self.caller.msg("\n".join(lines))
+                return
+            parent_inst = parent_matches[0] if parent_matches else None
 
         if not parent_inst:
             self.caller.msg(
@@ -403,14 +480,19 @@ class CmdUnparentCyberware(MuxCommand):
 
     Usage:
       unparentcyberware <child cyberware>=<character name>
+      unparentcyberware #<n>=<character name>
 
     Examples:
       unparentcyberware Anti-Dazzle=Soma
       unparentcyberware "Popup Ranged Weapon"=Soma
+      unparentcyberware #12=Soma
 
     Disconnects the option from its parent limb/suite. The option is uninstalled
     (moved to inventory as uninstalled). Humanity loss is preserved - reinstalling
     the same type won't cost extra. Use cyberware/parent to re-assign it later.
+    Use "#<n>" (the per-character display number shown on the sheet) if the
+    character has more than one installed item with that name on different
+    parents (e.g. Targeting Scope on two different Smart Lenses).
     """
 
     key = "unparentcyberware"
@@ -444,22 +526,43 @@ class CmdUnparentCyberware(MuxCommand):
             self.caller.msg(f"{character.key} does not have a character sheet.")
             return
 
-        # Find installed child instance with a parent
-        child_inst = CyberwareInstance.objects.filter(
-            character_sheet=char_sheet,
-            cyberware__name__iexact=child_name,
-            installed=True,
-            parent__isnull=False,
-        ).select_related("cyberware", "parent").first()
-
-        if not child_inst:
-            # Also try via inventory
-            inventory, _ = Inventory.get_or_create_for_character(character)
-            child_inst = inventory.cyberware.filter(
-                cyberware__name__iexact=child_name,
+        id_match = child_name.lstrip("#").strip()
+        if child_name.startswith("#") and id_match.isdigit():
+            child_inst = CyberwareInstance.objects.filter(
+                character_sheet=char_sheet,
+                slot_number=int(id_match),
                 installed=True,
                 parent__isnull=False,
             ).select_related("cyberware", "parent").first()
+        else:
+            # Find installed child instance(s) with a parent
+            child_matches = list(CyberwareInstance.objects.filter(
+                character_sheet=char_sheet,
+                cyberware__name__iexact=child_name,
+                installed=True,
+                parent__isnull=False,
+            ).select_related("cyberware", "parent"))
+            if len(child_matches) > 1:
+                lines = [
+                    f"{character.key} has {len(child_matches)} installed '{child_name}' items "
+                    f"with a parent. Specify which one:"
+                ]
+                for cand in sorted(child_matches, key=lambda c: c.slot_number or 0):
+                    pname = cand.parent.cyberware.name if cand.parent and cand.parent.cyberware else "?"
+                    lines.append(f"  #{cand.slot_number or '?'}  {cand.cyberware.name} (on {pname})")
+                lines.append(f"Then run: unparentcyberware #<n>={character.key}")
+                self.caller.msg("\n".join(lines))
+                return
+            child_inst = child_matches[0] if child_matches else None
+
+            if not child_inst:
+                # Also try via inventory
+                inventory, _ = Inventory.get_or_create_for_character(character)
+                child_inst = inventory.cyberware.filter(
+                    cyberware__name__iexact=child_name,
+                    installed=True,
+                    parent__isnull=False,
+                ).select_related("cyberware", "parent").first()
 
         if not child_inst:
             self.caller.msg(

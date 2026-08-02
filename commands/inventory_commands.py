@@ -484,8 +484,9 @@ class CmdInventory(MuxCommand):
             for cw_inst in cyberware:
                 cw = cw_inst.cyberware
                 hl = cw.humanity_loss or 0
+                display_name = f"#{cw_inst.slot_number or '?'} {cw.name or ''}"
                 output += (
-                    f"|w{inv_visible_cell(cw.name or '', name_w)}|n "
+                    f"|w{inv_visible_cell(display_name, name_w)}|n "
                     f"|w{inv_visible_cell(cw.type or '', type_w)}|n "
                     f"|w{inv_visible_cell(str(hl), hl_w)}|n\n"
                 )

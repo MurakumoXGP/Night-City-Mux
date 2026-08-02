@@ -46,6 +46,7 @@ def check_cyberware_requirements(character, cyberware):
         check_cyberlimb_exclusive_option_capacity,
         FOUNDATION_EYE_NAME_LOWERS,
         _CYBEREYE_INSTANCE_NAMES,
+        _TRUE_CYBEREYE_LOWERS,
     )
 
     # 1. Required parent (e.g. Kerenzikov needs Neural Link). Includes solo-limb override.
@@ -111,7 +112,7 @@ def check_cyberware_requirements(character, cyberware):
     # 3. Pairable limits: Cybereye, Cyberarm, Cyberleg
     cw_lower = (cyberware.name or "").strip().lower()
 
-    if cw_lower in FOUNDATION_EYE_NAME_LOWERS:
+    if cw_lower in _TRUE_CYBEREYE_LOWERS:
         count = CyberwareInstance.objects.filter(
             character_sheet=character,
             cyberware__name__in=_CYBEREYE_INSTANCE_NAMES,

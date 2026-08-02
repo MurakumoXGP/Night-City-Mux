@@ -110,7 +110,12 @@ class CyberwareInstance(SharedMemoryModel):
         blank=True,
         related_name="paired_instances",
     )
-    
+    # Per-character display number, assigned once and never reused (even after the item
+    # is removed). Small and stable, unlike the raw database id -- lets staff and players
+    # reference one specific item ("#5") when a character owns several with the same name
+    # (e.g. multiple Smart Lenses), without exposing internal database identifiers.
+    slot_number = models.PositiveIntegerField(null=True, blank=True)
+
     class Meta:
         # Ensure at least one character field is populated
         constraints = [
@@ -119,6 +124,23 @@ class CyberwareInstance(SharedMemoryModel):
                 name='inventory_cyberware_instance_has_character'
             )
         ]
+
+    def save(self, *args, **kwargs):
+        if self.slot_number is None:
+            char_filter = {}
+            if self.character_sheet_id:
+                char_filter["character_sheet_id"] = self.character_sheet_id
+            elif self.character_object_id:
+                char_filter["character_object_id"] = self.character_object_id
+            if char_filter:
+                last = (
+                    CyberwareInstance.objects.filter(**char_filter)
+                    .exclude(pk=self.pk)
+                    .aggregate(models.Max("slot_number"))["slot_number__max"]
+                    or 0
+                )
+                self.slot_number = last + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.cyberware.name} - {self.get_character_name()}"
