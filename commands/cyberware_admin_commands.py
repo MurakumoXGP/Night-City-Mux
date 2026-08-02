@@ -12,7 +12,13 @@ def _cyberware_allows_multiple_installed_instances(cyberware: Cyberware) -> bool
     """
     True for limb/option gear that can be installed more than once (different parents),
     e.g. Extra-Jointed on each cyberarm. Paired bases (Cybereye, Cyberarm) still use /pair.
+    Defers to validation.allows_multiples() as the single source of truth for anything
+    not covered by the Cyberlimb-option type/description checks below, so this never
+    drifts out of sync with MULTIPLE_ALLOWED again.
     """
+    from world.cyberware.validation import allows_multiples
+    if allows_multiples(cyberware):
+        return True
     ctype = (cyberware.type or "").strip()
     if ctype in ("Cyberlimb", "Cyberarm Option", "Cyberleg Option"):
         return True
@@ -21,31 +27,7 @@ def _cyberware_allows_multiple_installed_instances(cyberware: Cyberware) -> bool
         ("cyberlimb option.", "cyberarm option.", "cyberleg option.")
     ):
         return True
-    name = (cyberware.name or "").strip().lower()
-    return name in {
-        "hardened shielding",
-        "plastic covering",
-        "realskinn covering",
-        "superchrome covering",
-        "gorilla arm",
-        "mantis blade",
-        "reinforced cyberlimb upgrade",
-        "extra-jointed cyberlimb upgrade",
-        "hardened cybereye casing",
-        "color shift",
-        "standard hand",
-        "standard foot",
-        "modular finger cyberhand",
-        # Danger Gal Dossier: worn Micro Chrome hosts -- a character may own more
-        # than one (e.g. two Smart Lenses, one per eye). Kept in sync with
-        # MULTIPLE_ALLOWED in world/cyberware/validation.py.
-        "smart lens",
-        "smart glasses",
-        "smart ears",
-        "cyberdude smart glove",
-        "dynalar xtra-dex smart glove",
-        "battleglove",
-    }
+    return False
 
 
 class CmdAddCyberware(MuxCommand):
