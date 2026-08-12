@@ -17,7 +17,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 """
 
 from evennia import default_cmds, CmdSet
-from .character_commands import CmdSheet, CmdRoll, CmdAwareness, CmdLuck, CmdShortDesc, CmdPlusOoc, CmdPlusIc, CmdMeet
+from .character_commands import CmdSheet, CmdRoll, CmdAwareness, CmdLuck, CmdShortDesc, CmdPlusOoc, CmdPlusIc, CmdMeet, CmdCharName, CmdCharAlias, CmdAccountName
 from .chargen import CmdChargen, CmdListCharacterSheets, CmdLifepath, CmdSelfStat, CmdSetLanguage, CmdSellYourSoul, CmdSetSellYourSoul
 from .admin_commands import CmdStat, CmdHeal, CmdHarm, CmdApprove, CmdUnapprove, CmdSetStoryteller, CmdSpawnRipperdoc, CmdGradientName, CmdClearAllStates, CmdClearRental, CmdCleanupDuplicates, CmdExamine, CmdAssociateAllCharacterSheets, CmdViewCharacterSheetID, CmdSetCharacterSheetID, CmdAllSheets, CmdViewSheetAttributes, CmdSyncLanguages, CmdJoin, CmdSummon, CmdClearDb
 from .inventory_commands import CmdInventory, CmdWear, CmdEquipWeapon
@@ -184,6 +184,8 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdMultidesc())
         self.add(CmdFinger())
         self.add(CmdGradientName())
+        self.add(CmdCharName())
+        self.add(CmdCharAlias())
         self.add(CmdBalance())
         self.add(CmdGiveMoney())
         self.add(CmdBuy())
@@ -304,6 +306,7 @@ class AccountCmdSet(default_cmds.AccountCmdSet):
         self.add(CmdEloSetup())
 
         self.add(CmdGradientName())
+        self.add(CmdAccountName())
         self.add(CmdClearAllStates())
         self.add(CmdListCharacterSheets())
         self.add(CmdSetSellYourSoul())
