@@ -1526,3 +1526,341 @@ class CmdMeet(MuxCommand):
         target.ndb.meet_request = caller
         caller.msg(f"You sent a meet request to {target.name}.")
         target.msg(f"{caller.name} has sent you a meet request. Use +meet/accept to accept or +meet/reject to decline.")
+
+
+class CmdCharName(MuxCommand):
+    """
+    Change a character's name.
+
+    ============================
+     PLAYER USE
+    ============================
+      @name me=<new name>
+      @name <new name>
+
+    Changes the name displayed everywhere in the game for YOUR OWN
+    character: room descriptions, poses, combat, the who list, and
+    search. This is your character's in-game name only -- it does
+    NOT change your account login name (see @accountname for that).
+
+    Names must be unique across the whole game (checked against every
+    other character's name AND alias) -- if it's taken, you'll be told
+    and asked to pick another. No approval needed; the change is instant.
+
+    Examples:
+      @name me=Rhey Ultim
+      @name me=Ghost
+
+    ============================
+     STAFF & BUILDER USE
+    ============================
+      @name <object>=<new name>
+      @name <object>=<new name>;<alias1>;<alias2>
+
+    Staff/Builders can rename ANY object in the game this way -- rooms,
+    exits, NPCs, props -- not just characters. This works exactly like
+    Evennia's standard @name: name the target instead of "me", and
+    optionally attach one or more aliases to it with semicolons (this
+    replaces all of that object's existing aliases with the new list).
+
+    Examples:
+      @name North Gate=South Gate
+      @name Vendor NPC=Fixer Bob;bob;fixer
+
+    See also: @alias
+    """
+    key = "@name"
+    aliases = ["name"]
+    locks = "cmd:all()"
+    help_category = "Character"
+
+    def func(self):
+        args = self.args.strip()
+        if not args:
+            self.caller.msg("Usage: @name me=<new name>  (or just @name <new name>)")
+            self.caller.msg("Staff/Builders: @name <object>=<new name>[;alias1;alias2]")
+            return
+
+        if "=" in args:
+            target, new_name = args.split("=", 1)
+            target = target.strip()
+        else:
+            if args.strip().lower() == "me":
+                self.caller.msg("Usage: @name me=<new name>  (or just @name <new name>)")
+                return
+            target, new_name = "me", args
+        new_name = new_name.strip()
+
+        if not new_name:
+            self.caller.msg("You must provide a new name.")
+            return
+
+        if target.lower() != "me":
+            if not self.caller.check_permstring("Builder"):
+                self.caller.msg("You can only rename yourself. Use: @name me=<new name>")
+                return
+            obj = self.caller.search(target, global_search=True)
+            if not obj:
+                return
+            parts = [p.strip() for p in new_name.split(";")]
+            newkey = parts[0]
+            extra_aliases = parts[1:]
+            if not newkey:
+                self.caller.msg("You must specify a new name.")
+                return
+            old_name = obj.key
+            obj.key = newkey
+            if extra_aliases:
+                for a in list(obj.aliases.all()):
+                    obj.aliases.remove(a)
+                for a in extra_aliases:
+                    obj.aliases.add(a)
+            obj.save()
+            msg = f"Renamed '{old_name}' to '{newkey}'"
+            if extra_aliases:
+                msg += f" (aliases: {', '.join(extra_aliases)})"
+            self.caller.msg(msg + ".")
+            return
+
+        if not new_name.isascii():
+            self.caller.msg("Names must use standard characters only (no special/unicode symbols).")
+            return
+        if len(new_name) > 40:
+            self.caller.msg("That name is too long (max 40 characters).")
+            return
+        if ";" in new_name:
+            self.caller.msg("Names cannot contain ';' (reserved for the builder alias syntax).")
+            return
+
+        matches = [
+            obj for obj in search_object(new_name, exact=True)
+            if obj.id != self.caller.id
+        ]
+        if matches:
+            self.caller.msg(f"The name '{new_name}' is already in use (as a name or alias). Please choose another.")
+            return
+
+        old_name = self.caller.key
+        self.caller.key = new_name
+        self.caller.save()
+        self.caller.msg(f"Your name has been changed from '{old_name}' to '{new_name}'.")
+        if self.caller.location:
+            self.caller.location.msg_contents(
+                f"{old_name} is now known as {new_name}.", exclude=[self.caller]
+            )
+
+
+class CmdCharAlias(MuxCommand):
+    """
+    Manage a character's alias.
+
+    ============================
+     PLAYER USE
+    ============================
+      @alias me=<alias>          - set your alias (replaces any existing one)
+      @alias/remove me           - clear your alias
+      @alias me                  - show your current alias
+
+    An alias lets others find or address YOUR OWN character by an
+    additional name (e.g. a street handle) without changing your
+    primary displayed name (use @name for that). You may only have
+    ONE alias at a time -- setting a new one automatically replaces
+    the old one, you don't need to remove it first.
+
+    Aliases must be unique across the whole game, same as names: you
+    can't take one that's already someone's primary name or someone
+    else's alias.
+
+    Examples:
+      @alias me=Ghost
+      @alias me=Wraith        (replaces "Ghost" with "Wraith")
+      @alias/remove me
+      @alias me
+
+    ============================
+     STAFF & BUILDER USE
+    ============================
+      @alias <object>=<alias>          - add an alias to any object
+      @alias/remove <object>=<alias>   - remove one alias from any object
+
+    Staff/Builders can add aliases to ANY object -- rooms, exits, NPCs,
+    props -- not just characters. Unlike the player path above, objects
+    may have MULTIPLE aliases at once; each one just adds to the list,
+    and /remove takes them off one at a time.
+
+    Examples:
+      @alias North Gate=Gate
+      @alias/remove North Gate=Gate
+
+    See also: @name
+    """
+    key = "@alias"
+    locks = "cmd:all()"
+    help_category = "Character"
+
+    def func(self):
+        args = self.args.strip()
+        if not args:
+            self.caller.msg("Usage: @alias me=<alias>  |  @alias/remove me  |  @alias me")
+            return
+
+        if "=" in args:
+            target, alias = args.split("=", 1)
+            target = target.strip()
+            alias = alias.strip()
+        else:
+            target, alias = args, None
+
+        is_self = target.lower() == "me"
+        if not is_self and not self.caller.check_permstring("Builder"):
+            self.caller.msg("You can only manage your own alias. Use: @alias me=<alias>")
+            return
+
+        obj = self.caller if is_self else self.caller.search(target, global_search=True)
+        if not obj:
+            return
+
+        if not alias and "remove" not in self.switches:
+            current = obj.aliases.all()
+            if not current:
+                self.caller.msg("You have no alias set." if is_self else f"{obj.key} has no aliases.")
+            elif is_self:
+                self.caller.msg(f"Your current alias: {current[0]}")
+            else:
+                self.caller.msg(f"{obj.key}'s aliases: {', '.join(current)}")
+            return
+
+        if "remove" in self.switches:
+            if is_self:
+                current = obj.aliases.all()
+                if not current:
+                    self.caller.msg("You don't have an alias set.")
+                    return
+                for a in list(current):
+                    obj.aliases.remove(a)
+                self.caller.msg(f"Removed your alias '{current[0]}'.")
+                return
+            if not alias:
+                self.caller.msg("Usage: @alias/remove <object>=<alias>")
+                return
+            if alias.lower() in [a.lower() for a in obj.aliases.all()]:
+                obj.aliases.remove(alias)
+                self.caller.msg(f"Removed alias '{alias}' from {obj.key}.")
+            else:
+                self.caller.msg(f"{obj.key} doesn't have an alias '{alias}'.")
+            return
+
+        if not alias.isascii():
+            self.caller.msg("Aliases must use standard characters only (no special/unicode symbols).")
+            return
+
+        matches = [o for o in search_object(alias, exact=True) if o.id != obj.id]
+        if matches:
+            self.caller.msg(f"'{alias}' is already in use (as a name or alias). Choose another.")
+            return
+
+        if is_self:
+            old = list(obj.aliases.all())
+            for a in old:
+                obj.aliases.remove(a)
+            obj.aliases.add(alias)
+            if old:
+                self.caller.msg(f"Your alias has been changed from '{old[0]}' to '{alias}'.")
+            else:
+                self.caller.msg(f"Added alias '{alias}'. You can now be found/addressed as '{alias}'.")
+        else:
+            obj.aliases.add(alias)
+            self.caller.msg(f"Added alias '{alias}' to {obj.key}.")
+
+
+class CmdAccountName(MuxCommand):
+    """
+    Change your account's login name.
+
+    ============================
+     PLAYER USE
+    ============================
+      @accountname me=<new username>
+
+    Changes the name you LOG IN with -- this is different from your
+    character's in-game display name (use @name for that instead).
+    After this change, you must use your NEW username to log in from
+    now on.
+
+    Usernames must use standard letters/numbers/punctuation only (no
+    spaces, no special/unicode symbols), and must be unique -- Evennia
+    enforces this automatically.
+
+    A record of your previous username(s) is kept for staff reference,
+    since some historical records (e.g. old +job entries) display the
+    username as it was at the time of the action, not your current one.
+
+    Example:
+      @accountname me=NewLoginName
+
+    ============================
+     STAFF & BUILDER USE
+    ============================
+    No staff-specific syntax -- this command only ever affects your
+    own account. Staff needing to change another player's login name
+    should use Evennia's admin tools directly.
+    """
+    key = "@accountname"
+    locks = "cmd:all()"
+    help_category = "Character"
+
+    def func(self):
+        args = self.args.strip()
+        if not args:
+            self.caller.msg("Usage: @accountname me=<new username>")
+            return
+        if "=" in args:
+            target, new_username = args.split("=", 1)
+            if target.strip().lower() != "me":
+                self.caller.msg("You can only rename your own account. Use: @accountname me=<new username>")
+                return
+        else:
+            if args.strip().lower() == "me":
+                self.caller.msg("Usage: @accountname me=<new username>")
+                return
+            new_username = args
+        new_username = new_username.strip()
+
+        account = getattr(self.caller, "account", None) or self.caller
+        if not account:
+            self.caller.msg("Could not find your account.")
+            return
+
+        if not new_username:
+            self.caller.msg("You must provide a new username.")
+            return
+        if not new_username.isascii():
+            self.caller.msg("Usernames must use standard characters only (no special/unicode symbols).")
+            return
+        if " " in new_username:
+            self.caller.msg("Usernames cannot contain spaces.")
+            return
+        if len(new_username) > 30:
+            self.caller.msg("That username is too long (max 30 characters).")
+            return
+
+        from evennia.accounts.models import AccountDB
+        existing = AccountDB.objects.filter(
+            username__iexact=new_username
+        ).exclude(id=account.id)
+        if existing.exists():
+            self.caller.msg(f"The username '{new_username}' is already taken. Please choose another.")
+            return
+
+        old_username = account.username
+        history = account.attributes.get("previous_usernames", default=[])
+        history.append(old_username)
+        account.attributes.add("previous_usernames", history)
+
+        account.username = new_username
+        account.save()
+
+        self.caller.msg(
+            f"Your login name has been changed from '{old_username}' to '{new_username}'. "
+            f"Use your new username next time you log in."
+        )
