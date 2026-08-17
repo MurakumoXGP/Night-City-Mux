@@ -30,9 +30,10 @@ __pycache__
 # Installation-specific.
 # For group efforts, comment out some or all of these.
 evennia.db3
-server/*
+server/*.pid
 server/conf/secret_settings.py
-server/logs/*.log.*
+server/conf/__pycache__/
+server/logs/
 server/.static/*
 server/.media/*
 world/commerce/migrations/*

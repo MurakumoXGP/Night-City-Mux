@@ -149,4 +149,3 @@ class Guest(DefaultGuest):
 
     pass
 
-logger.log_info(f"Account class methods: {[method for method in dir(Account) if not method.startswith('__')]}")
