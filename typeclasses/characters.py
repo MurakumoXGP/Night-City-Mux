@@ -6,7 +6,7 @@ They are what you "see" in game. The Character class in this module
 is setup to be the "default" character type created by the default
 creation commands.
 """
-from evennia import DefaultCharacter
+from evennia.objects.objects import DefaultCharacter
 from django.apps import apps
 from world.cyberpunk_constants import LANGUAGES
 from world.languages.models import CharacterLanguage, Language
