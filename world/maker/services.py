@@ -270,24 +270,29 @@ def create_fabrication_order(character, item_name, recipient=None):
     now = timezone.now()
     completed_at = now + timedelta(hours=time_hours)
 
-    order = CraftOrder.objects.create(
-        crafter=character,
-        craft_type=CraftOrder.CRAFT_TYPE_FABRICATION,
-        status=CraftOrder.STATUS_IN_PROGRESS,
-        item_type=item_type,
-        item_name=obj.name,
-        item_category=category,
-        item_data=item_data,
-        materials_cost=materials_cost,
-        price_category=price_category,
-        dv=dv,
-        time_hours=time_hours,
-        tech_skill=tech_skill,
-        specialty_rank=fabrication,
-        started_at=now,
-        completed_at=completed_at,
-        recipient=recipient or character,
-    )
+    try:
+        order = CraftOrder.objects.create(
+            crafter=character,
+            craft_type=CraftOrder.CRAFT_TYPE_FABRICATION,
+            status=CraftOrder.STATUS_IN_PROGRESS,
+            item_type=item_type,
+            item_name=obj.name,
+            item_category=category,
+            item_data=item_data,
+            materials_cost=materials_cost,
+            price_category=price_category,
+            dv=dv,
+            time_hours=time_hours,
+            tech_skill=tech_skill,
+            specialty_rank=fabrication,
+            started_at=now,
+            completed_at=completed_at,
+            recipient=recipient or character,
+        )
+    except Exception as e:
+        logger.log_trace(f"Maker create_fabrication_order: CraftOrder creation failed: {e}")
+        CharacterMoneyService.add_money(character, materials_cost)
+        return None, "A system error occurred queuing the fabrication. Materials refunded."
     return order, None
 
 
@@ -449,9 +454,6 @@ def create_upgrade_order(character, item_name, upgrade_name, recipient=None):
     if not CharacterMoneyService.spend_money(character, materials_cost):
         return None, "Failed to deduct materials cost."
 
-    # Consume the source item now; we preserve its serialized payload for fail/cancel recovery.
-    _remove_item_from_inventory(inv, item_type, removal_obj)
-
     now = timezone.now()
     completed_at = now + timedelta(hours=time_hours)
     upgraded_item_data["_maker_base_item"] = _build_voucher_item(
@@ -466,24 +468,48 @@ def create_upgrade_order(character, item_name, upgrade_name, recipient=None):
     upgraded_item_data["_maker_cost_1"] = materials_cost_1
     upgraded_item_data["_maker_cost_2"] = materials_cost_2
 
-    order = CraftOrder.objects.create(
-        crafter=character,
-        craft_type=CraftOrder.CRAFT_TYPE_UPGRADE,
-        status=CraftOrder.STATUS_IN_PROGRESS,
-        item_type=item_type,
-        item_name=upgraded_item_data.get("name", base_item_data.get("name", obj.name)),
-        item_category=base_item_data.get("category", ""),
-        item_data=upgraded_item_data,
-        materials_cost=materials_cost,
-        price_category=price_category,
-        dv=dv,
-        time_hours=time_hours,
-        tech_skill=tech_skill,
-        specialty_rank=upgrade_rank,
-        started_at=now,
-        completed_at=completed_at,
-        recipient=recipient or character,
-    )
+    # Create the order BEFORE touching the source item. If this fails for any
+    # reason, refund and bail out with the player's original item untouched --
+    # this was previously reversed (item removed first), which meant any
+    # failure here silently destroyed the item with nothing to recover from.
+    try:
+        order = CraftOrder.objects.create(
+            crafter=character,
+            craft_type=CraftOrder.CRAFT_TYPE_UPGRADE,
+            status=CraftOrder.STATUS_IN_PROGRESS,
+            item_type=item_type,
+            item_name=upgraded_item_data.get("name", base_item_data.get("name", obj.name)),
+            item_category=base_item_data.get("category", ""),
+            item_data=upgraded_item_data,
+            materials_cost=materials_cost,
+            price_category=price_category,
+            dv=dv,
+            time_hours=time_hours,
+            tech_skill=tech_skill,
+            specialty_rank=upgrade_rank,
+            started_at=now,
+            completed_at=completed_at,
+            recipient=recipient or character,
+        )
+    except Exception as e:
+        logger.log_trace(f"Maker create_upgrade_order: CraftOrder creation failed: {e}")
+        CharacterMoneyService.add_money(character, materials_cost)
+        return None, "A system error occurred queuing the upgrade. Materials refunded; your item was not touched."
+
+    # Order exists -- now safe to consume the source item. We keep its
+    # serialized payload (_maker_base_item, set above) for fail/cancel recovery.
+    try:
+        _remove_item_from_inventory(inv, item_type, removal_obj)
+    except Exception as e:
+        # Order was created but the item is still in inventory. Cancel the
+        # order and refund rather than leaving a phantom in-progress order
+        # the player never actually paid the item for.
+        logger.log_trace(f"Maker create_upgrade_order: item removal failed for order #{order.id}: {e}")
+        order.status = CraftOrder.STATUS_CANCELLED
+        order.save()
+        CharacterMoneyService.add_money(character, materials_cost)
+        return None, "A system error occurred consuming the source item. Materials refunded; your item was not touched."
+
     return order, None
 
 
@@ -529,24 +555,29 @@ def create_pharma_order(character, item_name, recipient=None):
     now = timezone.now()
     completed_at = now + timedelta(hours=time_hours)
 
-    order = CraftOrder.objects.create(
-        crafter=character,
-        craft_type=CraftOrder.CRAFT_TYPE_PHARMA,
-        status=CraftOrder.STATUS_IN_PROGRESS,
-        item_type="gear",
-        item_name=data["name"],
-        item_category="Pharmaceutical",
-        item_data=item_data,
-        materials_cost=materials_cost,
-        price_category="Pharma",
-        dv=dv,
-        time_hours=time_hours,
-        tech_skill="medical_tech",
-        specialty_rank=0,
-        started_at=now,
-        completed_at=completed_at,
-        recipient=recipient or character,
-    )
+    try:
+        order = CraftOrder.objects.create(
+            crafter=character,
+            craft_type=CraftOrder.CRAFT_TYPE_PHARMA,
+            status=CraftOrder.STATUS_IN_PROGRESS,
+            item_type="gear",
+            item_name=data["name"],
+            item_category="Pharmaceutical",
+            item_data=item_data,
+            materials_cost=materials_cost,
+            price_category="Pharma",
+            dv=dv,
+            time_hours=time_hours,
+            tech_skill="medical_tech",
+            specialty_rank=0,
+            started_at=now,
+            completed_at=completed_at,
+            recipient=recipient or character,
+        )
+    except Exception as e:
+        logger.log_trace(f"Maker create_pharma_order: CraftOrder creation failed: {e}")
+        CharacterMoneyService.add_money(character, materials_cost)
+        return None, "A system error occurred queuing the synthesis. Materials refunded."
     return order, None
 
 
@@ -594,24 +625,29 @@ def create_program_order(character, item_name, recipient=None):
     now = timezone.now()
     completed_at = now + timedelta(hours=time_hours)
 
-    order = CraftOrder.objects.create(
-        crafter=character,
-        craft_type=CraftOrder.CRAFT_TYPE_PROGRAM,
-        status=CraftOrder.STATUS_IN_PROGRESS,
-        item_type="gear",
-        item_name=data.get("name", ""),
-        item_category="Program",
-        item_data=item_data,
-        materials_cost=materials_cost,
-        price_category=price_category,
-        dv=dv,
-        time_hours=time_hours,
-        tech_skill="interface",
-        specialty_rank=interface,
-        started_at=now,
-        completed_at=completed_at,
-        recipient=recipient or character,
-    )
+    try:
+        order = CraftOrder.objects.create(
+            crafter=character,
+            craft_type=CraftOrder.CRAFT_TYPE_PROGRAM,
+            status=CraftOrder.STATUS_IN_PROGRESS,
+            item_type="gear",
+            item_name=data.get("name", ""),
+            item_category="Program",
+            item_data=item_data,
+            materials_cost=materials_cost,
+            price_category=price_category,
+            dv=dv,
+            time_hours=time_hours,
+            tech_skill="interface",
+            specialty_rank=interface,
+            started_at=now,
+            completed_at=completed_at,
+            recipient=recipient or character,
+        )
+    except Exception as e:
+        logger.log_trace(f"Maker create_program_order: CraftOrder creation failed: {e}")
+        CharacterMoneyService.add_money(character, materials_cost)
+        return None, "A system error occurred queuing the program craft. Materials refunded."
     return order, None
 
 
@@ -656,24 +692,29 @@ def create_deckoption_order(character, item_name, recipient=None):
     now = timezone.now()
     completed_at = now + timedelta(hours=time_hours)
 
-    order = CraftOrder.objects.create(
-        crafter=character,
-        craft_type=CraftOrder.CRAFT_TYPE_DECKOPTION,
-        status=CraftOrder.STATUS_IN_PROGRESS,
-        item_type="gear",
-        item_name=data.get("name", ""),
-        item_category="Deck Option",
-        item_data=item_data,
-        materials_cost=materials_cost,
-        price_category=price_category,
-        dv=dv,
-        time_hours=time_hours,
-        tech_skill="interface",
-        specialty_rank=interface,
-        started_at=now,
-        completed_at=completed_at,
-        recipient=recipient or character,
-    )
+    try:
+        order = CraftOrder.objects.create(
+            crafter=character,
+            craft_type=CraftOrder.CRAFT_TYPE_DECKOPTION,
+            status=CraftOrder.STATUS_IN_PROGRESS,
+            item_type="gear",
+            item_name=data.get("name", ""),
+            item_category="Deck Option",
+            item_data=item_data,
+            materials_cost=materials_cost,
+            price_category=price_category,
+            dv=dv,
+            time_hours=time_hours,
+            tech_skill="interface",
+            specialty_rank=interface,
+            started_at=now,
+            completed_at=completed_at,
+            recipient=recipient or character,
+        )
+    except Exception as e:
+        logger.log_trace(f"Maker create_deckoption_order: CraftOrder creation failed: {e}")
+        CharacterMoneyService.add_money(character, materials_cost)
+        return None, "A system error occurred queuing the deck option craft. Materials refunded."
     return order, None
 
 
@@ -716,48 +757,106 @@ def process_craft_order(order):
 
     total, d10 = _roll_maker_check(crafter, order.tech_skill, order.specialty_rank)
     order.roll_result = total
-    order.success = total >= order.dv
-    order.status = CraftOrder.STATUS_COMPLETED if order.success else CraftOrder.STATUS_FAILED
-    order.save()
+    check_passed = total >= order.dv
 
     recipient = order.recipient or crafter
     recipient_obj = recipient  # May be ObjectDB
 
-    if order.success:
-        # Create voucher with the crafted/upgraded item
-        voucher_prefix = "Crafted"
-        voucher_item_data = _strip_internal_upgrade_keys(order.item_data)
-        if order.craft_type == CraftOrder.CRAFT_TYPE_UPGRADE:
-            voucher_prefix = "Upgraded"
-        voucher = create_object(
-            "typeclasses.vouchers.Voucher",
-            key=f"{voucher_prefix}: {order.item_name}",
-            location=recipient_obj,
-        )
-        voucher_item = {
-            "name": order.item_name,
-            "description": voucher_item_data.get("description", ""),
-            "quantity": 1,
-            "ic_location": "",
-            "cloneable": False,
-            "item_type": order.item_type,
-            "item_data": voucher_item_data,
-        }
-        if order.item_type == "ammunition":
-            voucher_item["quantity"] = order.item_data.get("quantity", 10)
-        elif order.craft_type == CraftOrder.CRAFT_TYPE_PHARMA:
-            # Doses = Medical Tech Skill at process time
-            from world.chargen_constants import get_medical_tech_skill
-            medtech = get_medical_tech_skill(
-                getattr(crafter.db, "medicine_pharma", 0),
-                getattr(crafter.db, "medicine_cryo", 0),
+    voucher = None
+    voucher_error = None
+    if check_passed:
+        # Create the voucher BEFORE committing order.status as COMPLETED.
+        # If this fails for any reason, we must not leave the order marked
+        # complete with nothing delivered -- that was the root cause of
+        # crafted/upgraded items silently vanishing (item/money already
+        # spent, order permanently "done", nothing ever recoverable).
+        try:
+            voucher_prefix = "Crafted"
+            voucher_item_data = _strip_internal_upgrade_keys(order.item_data)
+            if order.craft_type == CraftOrder.CRAFT_TYPE_UPGRADE:
+                voucher_prefix = "Upgraded"
+            voucher = create_object(
+                "typeclasses.vouchers.Voucher",
+                key=f"{voucher_prefix}: {order.item_name}",
+                location=recipient_obj,
             )
-            voucher_item["quantity"] = max(1, medtech)
-            voucher_item["item_data"]["quantity"] = voucher_item["quantity"]
-        voucher.set_items([voucher_item])
-        order.voucher = voucher
-        order.save()
+            voucher_item = {
+                "name": order.item_name,
+                "description": voucher_item_data.get("description", ""),
+                "quantity": 1,
+                "ic_location": "",
+                "cloneable": False,
+                "item_type": order.item_type,
+                "item_data": voucher_item_data,
+            }
+            if order.item_type == "ammunition":
+                voucher_item["quantity"] = order.item_data.get("quantity", 10)
+            elif order.craft_type == CraftOrder.CRAFT_TYPE_PHARMA:
+                # Doses = Medical Tech Skill at process time
+                from world.chargen_constants import get_medical_tech_skill
+                medtech = get_medical_tech_skill(
+                    getattr(crafter.db, "medicine_pharma", 0),
+                    getattr(crafter.db, "medicine_cryo", 0),
+                )
+                voucher_item["quantity"] = max(1, medtech)
+                voucher_item["item_data"]["quantity"] = voucher_item["quantity"]
+            voucher.set_items([voucher_item])
+        except Exception as e:
+            voucher_error = e
+            logger.log_trace(f"Maker voucher creation failed for order #{order.id}: {e}")
 
+    order.success = check_passed and voucher_error is None
+    order.status = CraftOrder.STATUS_COMPLETED if order.success else CraftOrder.STATUS_FAILED
+    if voucher is not None and voucher_error is None:
+        order.voucher = voucher
+    order.save()
+
+    if voucher_error is not None:
+        # Voucher creation blew up after the check passed: treat exactly like
+        # a failed roll below (refund, restore original item for upgrades),
+        # but tell the crafter this was a system error, not a bad roll.
+        if order.craft_type != CraftOrder.CRAFT_TYPE_PHARMA:
+            CharacterMoneyService.add_money(crafter, order.materials_cost)
+        if order.craft_type == CraftOrder.CRAFT_TYPE_UPGRADE:
+            base_item = (order.item_data or {}).get("_maker_base_item")
+            if base_item:
+                restore_name = base_item.get("name", "Original Item")
+                restore_data = dict(base_item.get("item_data") or {})
+                restore_type = base_item.get("item_type", order.item_type)
+                restore_qty = int(base_item.get("quantity", 1) or 1)
+                try:
+                    recovery_voucher = create_object(
+                        "typeclasses.vouchers.Voucher",
+                        key=f"Recovered: {restore_name}",
+                        location=crafter,
+                    )
+                    recovery_voucher.set_items([
+                        {
+                            "name": restore_name,
+                            "description": restore_data.get("description", ""),
+                            "quantity": max(1, restore_qty),
+                            "ic_location": "",
+                            "cloneable": False,
+                            "item_type": restore_type,
+                            "item_data": restore_data,
+                        }
+                    ])
+                    order.voucher = recovery_voucher
+                    order.save()
+                except Exception as recovery_e:
+                    logger.log_err(
+                        f"Maker order #{order.id}: voucher creation AND recovery both failed: {recovery_e}"
+                    )
+        crafter.msg(
+            f"|rA system error occurred while delivering {order.item_name}.|n "
+            f"Your check succeeded but the item could not be created. "
+            f"Materials ({order.materials_cost} eb) refunded"
+            + (" and your original item was returned as a voucher." if order.craft_type == CraftOrder.CRAFT_TYPE_UPGRADE else ".")
+            + " Please contact staff if this keeps happening."
+        )
+        return
+
+    if order.success:
         craft_label = dict(CraftOrder.CRAFT_TYPE_CHOICES).get(order.craft_type, "Craft")
         if order.craft_type == CraftOrder.CRAFT_TYPE_PHARMA:
             doses = voucher_item.get("quantity", 1)

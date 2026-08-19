@@ -53,6 +53,12 @@ class CmdMake(MuxCommand):
     help_category = "Crafting"
 
     def func(self):
+        # Ensure the processing script exists before any order can be created,
+        # matching Hustle's proven pattern (unconditional, not just after a
+        # successful add) -- see world/hustle_system.py get_or_create_hustle_system
+        # usage in commands/hustle_commands.py.
+        get_or_create_maker_script()
+
         if not self.switches:
             self._do_queue()
             return
