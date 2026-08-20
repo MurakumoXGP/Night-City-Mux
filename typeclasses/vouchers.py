@@ -12,10 +12,52 @@ def _default_items():
     return []
 
 
+def _is_valid_numbering_owner(obj):
+    """Only real characters count as a numbering owner -- a voucher passing
+    through a room, exit, or other container shouldn't trigger a renumber."""
+    if not obj:
+        return False
+    from world.utils.character_utils import get_character_sheet
+    return get_character_sheet(obj) is not None
+
+
+def get_next_voucher_number(owner_id):
+    """
+    Return the next available voucher number for a given character id.
+    """
+    from evennia.utils.search import search_tag
+
+    existing = search_tag("voucher", category="object")
+    max_num = 0
+    for obj in existing:
+        if getattr(obj.db, "voucher_owner_id", None) != owner_id:
+            continue
+        num = getattr(obj.db, "voucher_number", None)
+        if isinstance(num, int) and num > max_num:
+            max_num = num
+    return max_num + 1
+
+
+def _voucher_numbers_held_by(owner_id, exclude_id=None):
+    """All voucher_number values currently held by a given character id."""
+    from evennia.utils.search import search_tag
+
+    nums = set()
+    for obj in search_tag("voucher", category="object"):
+        if exclude_id is not None and obj.id == exclude_id:
+            continue
+        if getattr(obj.db, "voucher_owner_id", None) != owner_id:
+            continue
+        num = getattr(obj.db, "voucher_number", None)
+        if isinstance(num, int):
+            nums.add(num)
+    return nums
+
+
 class Voucher(Object):
     """
     A voucher is a physical object that holds a list of IC items.
-    Each item: {name, description, quantity, ic_location, cloneable}
+    Each item: {name, description, quantity, ic_location, cloneable, created_by}
     """
     def at_object_creation(self):
         super().at_object_creation()
@@ -25,6 +67,44 @@ class Voucher(Object):
         self.db.ic_owner = ""  # Character name for +owner
         self.db.voucher_alias = ""  # Custom alias (max 20 chars)
         self.tags.add("voucher", category="object")
+        self._assign_voucher_number()
+
+    def _assign_voucher_number(self):
+        """
+        Assign a voucher number scoped to whoever currently holds it, the
+        same way CyberwareInstance.slot_number is scoped per-character.
+        Numbers stay stable as the voucher changes hands, EXCEPT when the
+        new holder already has a voucher using that same number -- in that
+        case (and only that case) it's bumped to the next free number for
+        the new holder, so numbers never collide within one character's
+        held vouchers.
+        """
+        owner = self.location
+        if not _is_valid_numbering_owner(owner):
+            return
+        owner_id = owner.id
+        current_num = getattr(self.db, "voucher_number", None)
+        prior_owner_id = getattr(self.db, "voucher_owner_id", None)
+
+        if prior_owner_id == owner_id and isinstance(current_num, int):
+            return  # same holder as before, nothing to do
+
+        if isinstance(current_num, int):
+            held = _voucher_numbers_held_by(owner_id, exclude_id=self.id)
+            if current_num not in held:
+                # No collision -- keep the same number, just update ownership.
+                self.db.voucher_owner_id = owner_id
+                return
+
+        self.db.voucher_owner_id = owner_id
+        self.db.voucher_number = get_next_voucher_number(owner_id)
+
+    def at_after_move(self, source_location, **kwargs):
+        """Re-check numbering whenever the voucher actually changes hands."""
+        move_hook = getattr(super(), "at_after_move", None)
+        if callable(move_hook):
+            move_hook(source_location, **kwargs)
+        self._assign_voucher_number()
 
     def get_items(self):
         return self.db.voucher_items or []
@@ -91,7 +171,9 @@ class Voucher(Object):
     def format_sheet(self, width=80):
         """Format voucher for +sheet display."""
         items = self.get_items()
-        out = sheet_header(f"Voucher: {self.key}", width=width)
+        num = getattr(self.db, "voucher_number", None)
+        title = f"Voucher #{num}: {self.key}" if num else f"Voucher: {self.key}"
+        out = sheet_header(title, width=width)
         out += sheet_section("Contents", width=width)
         if not items:
             out += "|w(empty)|n\n"

@@ -14,11 +14,12 @@ ALIAS_RE = re.compile(r'^[a-zA-Z0-9_-]+$')
 
 
 def find_voucher(caller, arg, location=None, quiet=False):
-    """Find voucher by name, dbref, or alias. Searches caller's inventory, then room.
+    """Find voucher by name, dbref, alias, or voucher number. Searches caller's
+    inventory, then room.
 
     Args:
         caller: Object performing the search
-        arg: Name, dbref, or alias to search for
+        arg: Name, dbref, alias, or voucher number to search for
         location: Optional location to search in; if None, searches caller and caller.location
         quiet: If True, suppress "Could not find" message when falling back to global search
                (useful when arg might be a character name, e.g. sheet <name>)
@@ -34,6 +35,17 @@ def find_voucher(caller, arg, location=None, quiet=False):
                         return obj
             except ValueError:
                 pass
+        # Voucher number match (permanent, per-creator number set by
+        # Voucher._assign_voucher_number). Checked before the name/alias
+        # fallback below.
+        num_str = arg[1:] if arg.startswith("#") else arg
+        if num_str.isdigit():
+            num = int(num_str)
+            for obj in container.contents:
+                if not obj.is_typeclass(VOUCHER_TYPECLASS):
+                    continue
+                if getattr(obj.db, "voucher_number", None) == num:
+                    return obj
         arg_lower = arg.lower()
         for obj in container.contents:
             if not obj.is_typeclass(VOUCHER_TYPECLASS):
@@ -63,8 +75,11 @@ class CmdVoucher(MuxCommand):
     Manage vouchers (IC objects).
 
     Usage:
+      voucher                           - List your vouchers (shows # for each)
+      voucher <player>/<#>              - Staff: jump straight to a numbered voucher
       +voucher/info <voucher>           - Show voucher contents
       +voucher/info <voucher>/<item#>   - Detailed info for item
+      +voucher/desc <voucher>/<item#>=<description> - Edit an item's description
       +voucher/alias <voucher>=<alias>  - Set alias (max 20 chars)
       +voucher/lock <voucher>           - Lock (only you can pick up/change)
       +voucher/unlock <voucher>         - Unlock
@@ -83,6 +98,9 @@ class CmdVoucher(MuxCommand):
       +voucher/add <voucher>=<type>/<name> - Staff: create custom item
       +voucher/setstat <voucher>/<item#>=<field>=<value> - Staff: set item stat
 
+    Vouchers can be targeted by name, alias, or their permanent voucher
+    number (e.g. #3 or just 3), shown in the voucher list.
+
     Abbrev: +vinfo for +voucher/info
     """
     key = "voucher"
@@ -92,6 +110,12 @@ class CmdVoucher(MuxCommand):
 
     def func(self):
         if not self.switches:
+            # Staff shortcut: 'voucher <player>/#' (or <player>/<name>) jumps
+            # straight to the detail view, same as +voucher/info <player>/<voucher>,
+            # without needing to type the /info switch.
+            if self.args and "/" in self.args and is_staff(self.caller):
+                self.do_info()
+                return
             self.do_list()
             return
         switch = self.switches[0].lower()
@@ -105,6 +129,8 @@ class CmdVoucher(MuxCommand):
             self.do_lock(False)
         elif switch == "loc":
             self.do_loc()
+        elif switch == "desc":
+            self.do_desc()
         elif switch == "use":
             self.do_use()
         elif switch == "withdraw":
@@ -150,12 +176,14 @@ class CmdVoucher(MuxCommand):
         W = 80
         title = f"{getattr(target_char, 'key', target_char)}'s Vouchers" if target_char else "Your Vouchers"
         out = sheet_header(title, width=W)
-        out += f"|y{'Voucher':<35}{'Items':<12}{'Locked':<10}|n\n"
+        out += f"|y{'#':<5}{'Voucher':<32}{'Items':<10}{'Locked':<10}|n\n"
         for v in vouchers:
             items = v.get_items() if hasattr(v, 'get_items') else []
             item_count = sum(it.get("quantity", 1) for it in items)
             locked = "Yes" if getattr(v.db, 'locked', False) else "No"
-            out += f"|w{v.key:<35}{item_count:<12}{locked:<10}|n\n"
+            num = getattr(v.db, 'voucher_number', None)
+            num_display = f"#{num}" if num else "-"
+            out += f"|w{num_display:<5}{v.key:<32}{item_count:<10}{locked:<10}|n\n"
         out += footer(width=W, fillchar="-")
         self.caller.msg(out)
 
@@ -193,8 +221,9 @@ class CmdVoucher(MuxCommand):
             if not item:
                 self.caller.msg(f"No such item #{item_num}.")
                 return
-            from world.voucher.utils import format_voucher_item
-            self.caller.msg(format_voucher_item(item, item_num))
+            from world.voucher.utils import format_voucher_item_v2
+            voucher_number = getattr(v.db, "voucher_number", None)
+            self.caller.msg(format_voucher_item_v2(item, item_num, voucher_number=voucher_number))
         else:
             self.caller.msg(v.format_sheet())
 
@@ -273,6 +302,49 @@ class CmdVoucher(MuxCommand):
         items[num - 1]["ic_location"] = loc
         v.set_items(items)
         self.caller.msg(f"IC location for item #{num} set to '{loc}'.")
+
+    def do_desc(self):
+        if "=" not in self.args:
+            self.caller.msg("Usage: +voucher/desc <voucher>/<item#>=<description>")
+            return
+        left, desc = self.args.split("=", 1)
+        desc = desc.strip()
+        parts = left.split("/", 1)
+        if len(parts) < 2:
+            self.caller.msg("Specify item number: <voucher>/<item#>")
+            return
+        v_arg, num_str = parts[0].strip(), parts[1].strip()
+        try:
+            num = int(num_str)
+        except ValueError:
+            self.caller.msg("Item number must be an integer.")
+            return
+        v = find_voucher(self.caller, v_arg)
+        if not v:
+            return
+        if v.location != self.caller:
+            self.caller.msg("You don't have that voucher.")
+            return
+        if not v.can_modify(self.caller):
+            self.caller.msg("That voucher is locked.")
+            return
+        item, _ = v.get_item_by_num(num)
+        if not item:
+            self.caller.msg(f"No such item #{num}.")
+            return
+        items = v.get_items()
+        updated = dict(item)
+        updated["description"] = desc
+        # Typed items also carry description inside item_data (used by the
+        # per-type stat formatters and the older format_voucher_item); keep
+        # both copies in sync so every display path shows the update.
+        item_data = dict(updated.get("item_data") or {})
+        if item_data:
+            item_data["description"] = desc
+            updated["item_data"] = item_data
+        items[num - 1] = updated
+        v.set_items(items)
+        self.caller.msg(f"Description for item #{num} updated.")
 
     def do_use(self):
         parts = self.args.split("/", 1)
@@ -729,6 +801,7 @@ class CmdVoucher(MuxCommand):
                 "cloneable": False,
                 "item_type": item_type,
                 "item_data": item_data,
+                "created_by": self.caller.key,
             })
             items = v.get_items()
             items.append(voucher_item)
@@ -770,6 +843,7 @@ class CmdVoucher(MuxCommand):
             "cloneable": False,
             "item_type": item_type,
             "item_data": item_data,
+            "created_by": self.caller.key,
         })
 
         # Remove from inventory

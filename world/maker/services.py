@@ -130,6 +130,7 @@ def create_staff_reward_upgrade(target_character, item_name, upgrade_name, staff
             "cloneable": False,
             "item_type": item_type,
             "item_data": upgraded_item_data,
+            "created_by": staff_character.key if staff_character else "Staff",
         }
     ])
     if staff_character and hasattr(voucher, "db"):
@@ -313,7 +314,7 @@ def _remove_item_from_inventory(inv, item_type, removal_obj):
         inv.vehicles.remove(removal_obj)
 
 
-def _build_voucher_item(name, item_type, item_data, quantity=1):
+def _build_voucher_item(name, item_type, item_data, quantity=1, created_by=""):
     """Build canonical voucher payload for a single typed item."""
     return {
         "name": name,
@@ -323,6 +324,7 @@ def _build_voucher_item(name, item_type, item_data, quantity=1):
         "cloneable": False,
         "item_type": item_type,
         "item_data": dict(item_data or {}),
+        "created_by": created_by,
     }
 
 
@@ -461,6 +463,7 @@ def create_upgrade_order(character, item_name, upgrade_name, recipient=None):
         item_type=item_type,
         item_data=base_item_data,
         quantity=1,
+        created_by=character.key,
     )
     upgraded_item_data["_maker_upgrade_key"] = upgrade["key"]
     upgraded_item_data["_maker_upgrade_name"] = upgrade["name"]
@@ -788,6 +791,7 @@ def process_craft_order(order):
                 "cloneable": False,
                 "item_type": order.item_type,
                 "item_data": voucher_item_data,
+                "created_by": crafter.key,
             }
             if order.item_type == "ammunition":
                 voucher_item["quantity"] = order.item_data.get("quantity", 10)
@@ -839,6 +843,7 @@ def process_craft_order(order):
                             "cloneable": False,
                             "item_type": restore_type,
                             "item_data": restore_data,
+                            "created_by": base_item.get("created_by") or crafter.key,
                         }
                     ])
                     order.voucher = recovery_voucher
@@ -907,6 +912,7 @@ def process_craft_order(order):
                         "cloneable": False,
                         "item_type": restore_type,
                         "item_data": restore_data,
+                        "created_by": base_item.get("created_by") or crafter.key,
                     }
                 ])
                 order.voucher = voucher

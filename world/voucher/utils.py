@@ -217,6 +217,7 @@ def normalize_voucher_item(item):
         "cloneable": bool(item.get("cloneable", False)),
         "item_type": item_type,
         "item_data": item_data,
+        "created_by": (item.get("created_by") or "")[:40],
     }
 
 
@@ -351,6 +352,112 @@ def format_voucher_item(item, item_num=None):
             out += f"{desc}\n"
 
     out += footer(width=W, fillchar="-")
+    return out
+
+
+def get_upgrade_names_display(item_data):
+    """Translate stored maker_upgrades keys into human-readable upgrade names."""
+    from world.maker.upgrades import UPGRADE_DEFINITIONS
+
+    keys = item_data.get("maker_upgrades") or []
+    if not keys:
+        return "None"
+    names = []
+    for key in keys:
+        definition = UPGRADE_DEFINITIONS.get(key)
+        names.append(definition["name"] if definition else key)
+    return ", ".join(names)
+
+
+def _arrow_header(label, width=80):
+    """`==========================> label <==========================` style header."""
+    text = f" {label} "
+    pad_total = max(0, width - len(text) - 2)
+    left = pad_total // 2
+    right = pad_total - left
+    return f"{'=' * left}>{text}<{'=' * right}"
+
+
+def _arrow_section(label, width=80):
+    """`--------------------------> label <----------------------------` style divider."""
+    text = f" {label} "
+    pad_total = max(0, width - len(text) - 2)
+    left = pad_total // 2
+    right = pad_total - left
+    return f"{'-' * left}>{text}<{'-' * right}"
+
+
+def format_voucher_item_v2(item, item_num=None, voucher_number=None):
+    """
+    Format a voucher item using the standard voucher card template:
+
+    ==========================> Voucher # <==========================
+               Item Name: Item name
+               Item Quality: <Quality>
+                Quantity: 1
+              Created By: <Player>
+    ---------------------------> Description for Item <----------------------------
+    <Description>
+    -----------------------------> Item Stats <-----------------------------
+    <Stats from the item database>
+    Upgrades:<Upgrades put on item>
+    -------------------------------------------------------------------------------
+    """
+    item_type = (item.get("item_type") or "").lower()
+    data = item.get("item_data") or {}
+    name = item.get("name") or data.get("name") or "?"
+    qty = item.get("quantity", 1)
+    created_by = item.get("created_by") or "Unknown"
+    quality = data.get("quality") if item_type == "weapon" else None
+    quality_display = quality.title() if quality else "N/A"
+
+    W = 80
+    header_label = f"Voucher #{voucher_number}" if voucher_number is not None else "Voucher"
+    if item_num is not None:
+        header_label += f" (Item #{item_num})"
+    out = _arrow_header(header_label, width=W) + "\n"
+    out += f"           Item Name: {name}\n"
+    out += f"           Item Quality: {quality_display}\n"
+    out += f"            Quantity: {qty}\n"
+    out += f"          Created By: {created_by}\n"
+
+    out += _arrow_section("Description for Item", width=W) + "\n"
+    desc = item.get("description") or data.get("description", "")
+    out += (wrap_ansi(desc, 78) if desc else "(no description)") + "\n"
+
+    out += _arrow_section("Item Stats", width=W) + "\n"
+    if item_type == "weapon":
+        out += f"  |gDamage:|n {data.get('damage', 'N/A')}  |gROF:|n {data.get('rof', 'N/A')}  |gHands:|n {data.get('hands', 'N/A')}\n"
+        wt = data.get("weapon_type", "") or data.get("category", "N/A")
+        out += (
+            f"  |gCategory:|n {data.get('category', 'N/A')}  |gType:|n {wt}  "
+            f"|gQuality:|n {data.get('quality', 'standard') or 'standard'}  "
+            f"|gValue:|n {data.get('value', 0)} eb  |gConceal:|n {'Yes' if data.get('concealable') else 'No'}\n"
+        )
+    elif item_type == "armor":
+        out += f"  |gSP:|n {data.get('sp', 'N/A')}  |gEV:|n {data.get('ev', 'N/A')}  |gLocations:|n {data.get('locations', 'N/A')}\n"
+        out += f"  |gWeight:|n {data.get('weight', 0)}  |gValue:|n {data.get('value', 0)} eb\n"
+    elif item_type == "gear":
+        out += f"  |gCategory:|n {data.get('category', 'N/A')}  |gWeight:|n {data.get('weight', 0)}  |gValue:|n {data.get('value', 0)} eb\n"
+    elif item_type == "cyberware":
+        out += (
+            f"  |gType:|n {data.get('type', 'N/A')}  |gSlots:|n {data.get('slots', 'N/A')}  "
+            f"|gHumanity Loss:|n {data.get('humanity_loss', 'N/A')}  |gCost:|n {data.get('cost', 0)} eb\n"
+        )
+    elif item_type == "ammunition":
+        out += (
+            f"  |gType:|n {data.get('ammo_type', 'N/A')}  |gWeapon Type:|n {data.get('weapon_type', 'N/A')}  "
+            f"|gDamage Mod:|n {data.get('damage_modifier', 0)}  |gAP:|n {data.get('armor_piercing', 0)}  "
+            f"|gCost:|n {data.get('cost', 0)} eb\n"
+        )
+    elif item_type == "vehicle":
+        out += f"  |gCategory:|n {data.get('category', 'N/A')}  |gSeats:|n {data.get('seats', 'N/A')}  |gSpeed:|n {data.get('speed_narrative', 'N/A')}\n"
+        out += f"  |gSDP:|n {data.get('sdp', 'N/A')}  |gValue:|n {data.get('value', 0)} eb\n"
+    else:
+        out += "  (no stat data)\n"
+
+    out += f"Upgrades: {get_upgrade_names_display(data)}\n"
+    out += "-" * W
     return out
 
 
