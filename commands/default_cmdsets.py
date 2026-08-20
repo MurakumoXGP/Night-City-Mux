@@ -18,6 +18,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 
 from evennia import default_cmds, CmdSet
 from .character_commands import CmdSheet, CmdRoll, CmdAwareness, CmdLuck, CmdShortDesc, CmdPlusOoc, CmdPlusIc, CmdMeet, CmdCharName, CmdCharAlias, CmdAccountName
+from .therapy_commands import CmdTherapy
 from .chargen import CmdChargen, CmdListCharacterSheets, CmdLifepath, CmdSelfStat, CmdSetLanguage, CmdSellYourSoul, CmdSetSellYourSoul
 from .admin_commands import CmdStat, CmdHeal, CmdHarm, CmdApprove, CmdUnapprove, CmdSetStoryteller, CmdSpawnRipperdoc, CmdGradientName, CmdClearAllStates, CmdClearRental, CmdCleanupDuplicates, CmdExamine, CmdAssociateAllCharacterSheets, CmdViewCharacterSheetID, CmdSetCharacterSheetID, CmdAllSheets, CmdViewSheetAttributes, CmdSyncLanguages, CmdJoin, CmdSummon, CmdClearDb
 from .inventory_commands import CmdInventory, CmdWear, CmdEquipWeapon
@@ -247,6 +248,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdGrantAccess())
         self.add(CmdPage())
         self.add(CmdStaff())
+        self.add(CmdTherapy())
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
     """
