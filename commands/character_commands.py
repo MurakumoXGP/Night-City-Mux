@@ -1680,16 +1680,26 @@ class CmdCharAlias(MuxCommand):
     ============================
      STAFF & BUILDER USE
     ============================
-      @alias <object>=<alias>          - add an alias to any object
-      @alias/remove <object>=<alias>   - remove one alias from any object
+      @alias <object>=<alias>                - add an alias to any object
+      @alias <object>=<alias1>,<alias2>,...  - add several aliases at once
+      @alias/remove <object>=<alias>         - remove one alias from any object
 
     Staff/Builders can add aliases to ANY object -- rooms, exits, NPCs,
     props -- not just characters. Unlike the player path above, objects
     may have MULTIPLE aliases at once; each one just adds to the list,
-    and /remove takes them off one at a time.
+    and /remove takes them off one at a time. A comma-separated list on
+    the right-hand side adds every entry in one go -- this matters for
+    exits, which commonly need several aliases (a short code plus one
+    or more direction letters, e.g. "nj,japantown,n"). Direction-style
+    aliases (n/s/e/w/etc) are only required to be unique on the object
+    itself, not across the whole game, since every room's exits reuse
+    them -- the global "already in use" uniqueness check only applies
+    to characters (so player names/aliases stay unambiguous for finding
+    and paging).
 
     Examples:
       @alias North Gate=Gate
+      @alias North Japantown=nj,japantown,n
       @alias/remove North Gate=Gate
 
     See also: @name
@@ -1750,16 +1760,16 @@ class CmdCharAlias(MuxCommand):
                 self.caller.msg(f"{obj.key} doesn't have an alias '{alias}'.")
             return
 
-        if not alias.isascii():
-            self.caller.msg("Aliases must use standard characters only (no special/unicode symbols).")
-            return
-
-        matches = [o for o in search_object(alias, exact=True) if o.id != obj.id]
-        if matches:
-            self.caller.msg(f"'{alias}' is already in use (as a name or alias). Choose another.")
-            return
-
         if is_self:
+            if not alias.isascii():
+                self.caller.msg("Aliases must use standard characters only (no special/unicode symbols).")
+                return
+
+            matches = [o for o in search_object(alias, exact=True) if o.id != obj.id]
+            if matches:
+                self.caller.msg(f"'{alias}' is already in use (as a name or alias). Choose another.")
+                return
+
             old = list(obj.aliases.all())
             for a in old:
                 obj.aliases.remove(a)
@@ -1768,9 +1778,53 @@ class CmdCharAlias(MuxCommand):
                 self.caller.msg(f"Your alias has been changed from '{old[0]}' to '{alias}'.")
             else:
                 self.caller.msg(f"Added alias '{alias}'. You can now be found/addressed as '{alias}'.")
-        else:
-            obj.aliases.add(alias)
-            self.caller.msg(f"Added alias '{alias}' to {obj.key}.")
+            return
+
+        # Staff/Builder path: objects (exits, rooms, NPCs, props) can carry
+        # several aliases, and a comma-separated rhs adds all of them in one
+        # call -- restores the pre-@alias-rewrite behavior exits rely on.
+        new_aliases = [a.strip() for a in alias.split(",") if a.strip()]
+        if not new_aliases:
+            self.caller.msg("Usage: @alias <object>=<alias>[,<alias2>,...]")
+            return
+
+        existing_lower = [a.lower() for a in obj.aliases.all()]
+        # Global uniqueness only matters for characters (so page/find stay
+        # unambiguous). Exits, rooms, NPCs, and props legitimately reuse
+        # short/direction aliases like "n", "e", "s", "w" across the grid.
+        check_global_uniqueness = bool(getattr(obj, "has_account", False))
+
+        added, skipped_duplicate, skipped_ascii, skipped_taken = [], [], [], []
+        for a in new_aliases:
+            if not a.isascii():
+                skipped_ascii.append(a)
+                continue
+            if a.lower() in existing_lower:
+                skipped_duplicate.append(a)
+                continue
+            if check_global_uniqueness:
+                matches = [o for o in search_object(a, exact=True) if o.id != obj.id]
+                if matches:
+                    skipped_taken.append(a)
+                    continue
+            obj.aliases.add(a)
+            existing_lower.append(a.lower())
+            added.append(a)
+
+        if added:
+            self.caller.msg(f"Added alias(es) '{', '.join(added)}' to {obj.key}.")
+        if skipped_duplicate:
+            self.caller.msg(f"{obj.key} already had: {', '.join(skipped_duplicate)}.")
+        if skipped_taken:
+            self.caller.msg(
+                f"Already in use elsewhere (as a name or alias), not added: {', '.join(skipped_taken)}."
+            )
+        if skipped_ascii:
+            self.caller.msg(
+                f"Skipped (special/unicode characters not allowed): {', '.join(skipped_ascii)}."
+            )
+        if not added and not skipped_duplicate and not skipped_taken and not skipped_ascii:
+            self.caller.msg("No aliases were added.")
 
 
 class CmdAccountName(MuxCommand):
