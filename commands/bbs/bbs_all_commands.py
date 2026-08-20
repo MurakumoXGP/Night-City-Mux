@@ -1,7 +1,7 @@
 #commands/bbs/bbs_all_commands.py
 
 # Standard Library Imports
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 
 # Django Imports
 from django.utils import timezone
@@ -160,7 +160,7 @@ class CmdBBS(default_cmds.MuxCommand):
         try:
             # Parse the datetime string to a datetime object
             dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=dt_timezone.utc)
             
             # Get the caller's timezone
             tz_name = target_char.attributes.get("timezone", "UTC")
@@ -186,7 +186,7 @@ class CmdBBS(default_cmds.MuxCommand):
         try:
             # Parse the datetime string to a datetime object
             dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
-            dt = dt.replace(tzinfo=timezone.utc)
+            dt = dt.replace(tzinfo=dt_timezone.utc)
             
             # Get the caller's timezone
             tz_name = target_char.attributes.get("timezone", "UTC")
