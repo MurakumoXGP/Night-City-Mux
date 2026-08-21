@@ -48,51 +48,85 @@ class CmdBalance(Command):
         self.caller.msg(f"You have {balance} Eurodollars.")
 
 
-class CmdGiveMoney(Command):
+# Replaces the old CmdGiveMoney/"transfer" command, which called
+# spend_money()/add_money() directly on the CharacterSheet model -- methods
+# that never actually existed there, so it threw an AttributeError on every
+# use. This does the transfer the same safe way CmdAdminMoney does (through
+# CharacterMoneyService, syncing db.eurodollars from the sheet first).
+class CmdPay(Command):
     """
-    Give Eurodollars to another character
+    Pay another player Eurodollars directly from your account balance.
 
     Usage:
-      transfer <amount> to <character>
+      +pay <target>=<amount>
+
+    Examples:
+      +pay Ari=500
     """
 
-    key = "transfer"
-    lock = "cmd:all()"
+    key = "+pay"
+    aliases = ["pay"]
+    locks = "cmd:all()"
     help_category = "Economy"
 
     def func(self):
         from typeclasses.npcs import is_npc
-        if is_npc(self.caller):
-            self.caller.msg("NPCs cannot give money to people.")
-            return
-        if not self.args or "to" not in self.args:
-            self.caller.msg("Usage: transfer <amount> to <character>")
+
+        caller = self.caller
+
+        if is_npc(caller):
+            caller.msg("NPCs cannot pay people.")
             return
 
-        amount, target = self.args.split("to")
+        if not self.args or "=" not in self.args:
+            caller.msg("Usage: +pay <target>=<amount>")
+            return
+
+        target_name, amount_str = [part.strip() for part in self.args.split("=", 1)]
+        if not target_name:
+            caller.msg("Usage: +pay <target>=<amount>")
+            return
+
         try:
-            amount = int(amount.strip())
+            amount = int(amount_str)
         except ValueError:
-            self.caller.msg("Please provide a valid amount.")
+            caller.msg("Please provide a valid whole number of Eurodollars.")
             return
 
-        target = self.caller.search(target.strip(), global_search=True)
+        if amount <= 0:
+            caller.msg("You must pay a positive amount.")
+            return
+
+        target = caller.search(target_name, global_search=True)
         if not target:
             return
 
-        if not hasattr(self.caller, 'character_sheet') or not hasattr(target, 'character_sheet'):
-            self.caller.msg("Both you and the target must have character sheets!")
+        if target == caller:
+            caller.msg("You can't pay yourself.")
             return
 
-        giver_cs = self.caller.character_sheet
-        receiver_cs = target.character_sheet
+        if not hasattr(caller, 'character_sheet') or not caller.character_sheet:
+            caller.msg("You don't have a character sheet!")
+            return
+        if not hasattr(target, 'character_sheet') or not target.character_sheet:
+            caller.msg(f"{target.name} doesn't have a character sheet.")
+            return
 
-        if giver_cs.spend_money(amount):
-            receiver_cs.add_money(amount)
-            self.caller.msg(f"You give {amount} Eurodollars to {target.name}.")
-            target.msg(f"{self.caller.name} gives you {amount} Eurodollars.")
-        else:
-            self.caller.msg("You don't have enough Eurodollars.")
+        # Sync db.eurodollars from the sheet first (same guard CmdAdminMoney uses)
+        # in case either character's cached balance is stale -- e.g. was offline
+        # for a change made directly against the sheet, or the two have drifted
+        # apart the way CmdGiveMoney's sheet-only path can leave them.
+        caller.db.eurodollars = CharacterSheetMoneyService.get_balance(caller.character_sheet)
+        target.db.eurodollars = CharacterSheetMoneyService.get_balance(target.character_sheet)
+
+        if not CharacterMoneyService.spend_money(caller, amount):
+            caller.msg(f"You don't have {amount} Eurodollars to give.")
+            return
+
+        CharacterMoneyService.add_money(target, amount)
+
+        caller.msg(f"You pay {target.name} {amount} Eurodollars.")
+        target.msg(f"{caller.name} pays you {amount} Eurodollars.")
 
 
 class CmdAdminMoney(Command):
