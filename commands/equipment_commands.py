@@ -114,7 +114,7 @@ class CmdAddItem(Command):
             return
 
         try:
-            character_sheet = CharacterSheet.objects.get(account=player.account)
+            character_sheet = CharacterSheet.objects.get(character=player)
         except (CharacterSheet.DoesNotExist, AttributeError):
             self.caller.msg(f"{player.name} doesn't have a character sheet.")
             return
@@ -1072,7 +1072,7 @@ class CmdRemoveEquipment(Command):
             return
 
         try:
-            character_sheet = CharacterSheet.objects.get(account=player.account)
+            character_sheet = CharacterSheet.objects.get(character=player)
         except CharacterSheet.DoesNotExist:
             self.caller.msg(f"{player.name} doesn't have a character sheet.")
             return
