@@ -35,7 +35,7 @@ from .mystery_commands import (
 )
 from .cyberware_admin_commands import CmdAddCyberware, CmdParentCyberware, CmdUnparentCyberware
 from .staff_commands import CmdRemoveCyberware, CmdUninstallCyberware, CmdSetLifepath, CmdReputation, CmdNotoriety, CmdConfig
-from .economy import CmdAdminMoney, CmdGiveMoney, CmdBalance, CmdLeaveRental
+from .economy import CmdAdminMoney, CmdBalance, CmdLeaveRental, CmdPay
 from .rent_commands import CmdRent, CmdHome
 from .rent_award_command import CmdRentAward
 from world.cyberpunk_sheets.commerce import CmdBuy, CmdRefund, CmdListItems, CmdGive, CmdSellItem, CmdHaggle
@@ -188,7 +188,7 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(CmdCharName())
         self.add(CmdCharAlias())
         self.add(CmdBalance())
-        self.add(CmdGiveMoney())
+        self.add(CmdPay())
         self.add(CmdBuy())
         self.add(CmdRefund())
         self.add(CmdListItems())
